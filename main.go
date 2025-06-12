@@ -1,0 +1,143 @@
+/*
+POST   /task/              :  create a task, returns ID
+GET    /task/<taskid>      :  returns a single task by ID
+GET    /task/              :  returns all tasks
+DELETE /task/<taskid>      :  delete a task by ID
+*/
+package main
+
+import (
+	"GoHttpRequestProxy/internal/taskstore"
+	"bytes"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+type taskServer struct {
+	store *taskstore.TaskStore
+}
+
+func NewTaskServer() *taskServer {
+	store := taskstore.New()
+	return &taskServer{store: store}
+}
+
+func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
+	allTasks := ts.store.GetAllTasks()
+	c.JSON(http.StatusOK, allTasks)
+}
+
+func (ts *taskServer) deleteAllTasksHandler(c *gin.Context) {
+	ts.store.DeleteAllTasks()
+}
+
+func (ts *taskServer) createTaskHandler(c *gin.Context) {
+	type RequestTask struct {
+		Method  string            `json:"method"`
+		Url     string            `json:"url"`
+		Headers map[string]string `json:"headers"`
+		Body    string            `json:"body"`
+	}
+
+	var rt RequestTask
+	if err := c.ShouldBindJSON(&rt); err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	scheduledStartTime := time.Now().Format(time.RFC3339Nano)
+	id := ts.store.CreateTask("in_process", 202, make(map[string]string), 0, scheduledStartTime)
+
+	var req *http.Request
+	var err error
+
+	if rt.Method == "GET" {
+		req, err = http.NewRequest("GET", rt.Url, nil)
+	} else {
+		req, err = http.NewRequest(rt.Method, rt.Url, bytes.NewBuffer([]byte(rt.Body)))
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	if err != nil {
+		ts.store.ChangeTask(id, "error", 500, make(map[string]string), 0, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+
+	headers := make(map[string]string)
+
+	if err != nil {
+		ts.store.ChangeTask(id, "error", 500, headers, 0, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+
+	for key, values := range resp.Header {
+
+		if len(values) > 0 {
+			headers[key] = values[0]
+		}
+	}
+
+	ts.store.ChangeTask(id, "done", resp.StatusCode, headers, resp.ContentLength, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
+	c.JSON(http.StatusOK, gin.H{"Id": id})
+}
+
+func (ts *taskServer) getTaskHandler(c *gin.Context) {
+	id, err := strconv.Atoi(c.Params.ByName("id"))
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	task, err := ts.store.GetTask(id)
+	if err != nil {
+		c.String(http.StatusNotFound, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, task)
+}
+
+func (ts *taskServer) deleteTaskHandler(c *gin.Context) {
+	id, err := strconv.Atoi(c.Params.ByName("id"))
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err = ts.store.DeleteTask(id); err != nil {
+		c.String(http.StatusNotFound, err.Error())
+	}
+}
+
+/*
+func (ts *taskServer) tagHandler(c *gin.Context) {
+	tag := c.Params.ByName("tag")
+	tasks := ts.store.GetTasksByTag(tag)
+	c.JSON(http.StatusOK, tasks)
+}
+*/
+
+func main() {
+	router := gin.Default()
+	server := NewTaskServer()
+
+	router.POST("/task/", server.createTaskHandler)
+	router.GET("/task/", server.getAllTasksHandler)
+	router.DELETE("/task/", server.deleteAllTasksHandler)
+	router.GET("/task/:id", server.getTaskHandler)
+	router.DELETE("/task/:id", server.deleteTaskHandler)
+
+	router.Run(":8080")
+}
