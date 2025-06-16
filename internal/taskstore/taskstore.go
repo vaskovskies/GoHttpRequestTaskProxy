@@ -6,10 +6,11 @@ import (
 )
 
 type Task struct {
-	Id                 int               `json:"id"`
+	Id                 int64             `json:"id"`
 	Status             string            `json:"status"`
 	HttpStatusCode     int               `json:"httpStatusCode"`
 	Headers            map[string]string `json:"headers"`
+	Body               string            `json:"body"`
 	Length             int64             `json:"length"`
 	ScheduledStartTime string            `json:"scheduledStartTime"`
 	ScheduledEndTime   string            `json:"scheduledEndTime"`
@@ -18,20 +19,20 @@ type Task struct {
 type TaskStore struct {
 	sync.Mutex
 
-	tasks  map[int]Task
-	nextId int
+	tasks  map[int64]Task
+	nextId int64
 }
 
 // this is the initializer
 func New() *TaskStore {
 	ts := &TaskStore{}
-	ts.tasks = make(map[int]Task)
+	ts.tasks = make(map[int64]Task)
 	ts.nextId = 0
 	return ts
 }
 
 // CreateTask creates a new task in the store.
-func (ts *TaskStore) CreateTask(status string, httpStatusCode int, headers map[string]string, length int64, scheduledStartTime string) int {
+func (ts *TaskStore) CreateTask(status string, httpStatusCode int, headers map[string]string, length int64, scheduledStartTime string) int64 {
 	ts.Lock()
 	defer ts.Unlock()
 
@@ -40,6 +41,7 @@ func (ts *TaskStore) CreateTask(status string, httpStatusCode int, headers map[s
 		Status:             status,
 		HttpStatusCode:     httpStatusCode,
 		Headers:            headers,
+		Body:               "",
 		Length:             length,
 		ScheduledStartTime: scheduledStartTime,
 		ScheduledEndTime:   ""}
@@ -51,7 +53,7 @@ func (ts *TaskStore) CreateTask(status string, httpStatusCode int, headers map[s
 
 // GetTask retrieves a task from the store, by id. If no such id exists, an
 // error is returned.
-func (ts *TaskStore) GetTask(id int) (Task, error) {
+func (ts *TaskStore) GetTask(id int64) (Task, error) {
 
 	ts.Lock()
 	defer ts.Unlock()
@@ -66,7 +68,7 @@ func (ts *TaskStore) GetTask(id int) (Task, error) {
 
 // DeleteTask deletes the task with the given id. If no such id exists, an error
 // is returned.
-func (ts *TaskStore) DeleteTask(id int) error {
+func (ts *TaskStore) DeleteTask(id int64) error {
 	ts.Lock()
 	defer ts.Unlock()
 
@@ -83,7 +85,7 @@ func (ts *TaskStore) DeleteAllTasks() error {
 	ts.Lock()
 	defer ts.Unlock()
 
-	ts.tasks = make(map[int]Task)
+	ts.tasks = make(map[int64]Task)
 	return nil
 }
 
@@ -99,7 +101,7 @@ func (ts *TaskStore) GetAllTasks() []Task {
 	return allTasks
 }
 
-func (ts *TaskStore) ChangeTask(id int, status string, httpStatusCode int, headers map[string]string, length int64, scheduledStartTime string, scheduledEndTime string) error {
+func (ts *TaskStore) ChangeTask(id int64, status string, httpStatusCode int, headers map[string]string, body string, length int64, scheduledStartTime string, scheduledEndTime string) error {
 	ts.Lock()
 	defer ts.Unlock()
 	ts.tasks[id] = Task{
@@ -107,6 +109,7 @@ func (ts *TaskStore) ChangeTask(id int, status string, httpStatusCode int, heade
 		Status:             status,
 		HttpStatusCode:     httpStatusCode,
 		Headers:            headers,
+		Body:               body,
 		Length:             length,
 		ScheduledStartTime: scheduledStartTime,
 		ScheduledEndTime:   scheduledEndTime,

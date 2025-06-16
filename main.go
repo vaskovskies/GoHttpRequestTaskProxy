@@ -3,6 +3,7 @@ package main
 import (
 	"GoHttpRequestTaskProxy/internal/taskstore"
 	"bytes"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -56,8 +57,8 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	}
 
 	if err != nil {
-		ts.store.ChangeTask(id, "error", 500, make(map[string]string), 0, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
-		c.JSON(500, gin.H{"error": err.Error()})
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), "", 0, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -70,11 +71,10 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	headers := make(map[string]string)
 
 	if err != nil {
-		ts.store.ChangeTask(id, "error", 500, headers, 0, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
-		c.JSON(500, gin.H{"error": err.Error()})
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, "", 0, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	defer resp.Body.Close()
 
 	for key, values := range resp.Header {
 
@@ -83,12 +83,20 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 		}
 	}
 
-	ts.store.ChangeTask(id, "done", resp.StatusCode, headers, resp.ContentLength, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
+	defer resp.Body.Close()
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, "", 0, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
+		return
+	}
+	defer resp.Body.Close() // Don't forget to close the body
+
+	ts.store.ChangeTask(id, "done", resp.StatusCode, headers, string(bodyBytes), resp.ContentLength, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
 	c.JSON(http.StatusOK, gin.H{"Id": id})
 }
 
 func (ts *taskServer) getTaskHandler(c *gin.Context) {
-	id, err := strconv.Atoi(c.Params.ByName("id"))
+	id, err := strconv.ParseInt(c.Params.ByName("id"), 10, 64)
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
@@ -104,7 +112,7 @@ func (ts *taskServer) getTaskHandler(c *gin.Context) {
 }
 
 func (ts *taskServer) deleteTaskHandler(c *gin.Context) {
-	id, err := strconv.Atoi(c.Params.ByName("id"))
+	id, err := strconv.ParseInt(c.Params.ByName("id"), 10, 64)
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
