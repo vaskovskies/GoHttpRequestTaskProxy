@@ -3,13 +3,17 @@
 services:
   go-app:
     container_name: go-app
-    build: .
+    build:
+      context: ..
+      dockerfile: deployments/dockerfile
     environment:
       DATABASE_URL: "host = go_db user=postgres password=postgres dbname=postgres sslmode=disable"
     ports:
       - "8080:8080"
     depends_on:
       - go_db
+    #volumes:
+    #  - ..:/app
   go_db:
     container_name: go_db
     image: postgres:17

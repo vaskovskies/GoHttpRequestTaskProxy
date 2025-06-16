@@ -23,6 +23,12 @@ DELETE /task/			   :  delete all tasks
     docker compose up -d go_db
     docker compose up -d go-app
 
+in deployments folder
+
+    docker compose -f deployments/docker-compose.yml up -d go-app
+
+if you  want to run the app out of the root folder
+
 # Roadmap
 
 - [X] Implement basic prototype

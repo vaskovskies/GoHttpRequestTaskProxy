@@ -5,16 +5,16 @@ FROM golang:1.24.4
 WORKDIR /app
 
 #copy source files
-COPY .. .
+COPY . .
 
 #download and install the dependencies
-RUN go get -d -v ../...
+RUN go get -v ./...
 
 #build the go app
-RUN go build -o GoHttpRequestTaskProxy
-
+RUN GOOS=linux GOARCH=amd64 go build -o GoHttpRequestTaskProxy
+RUN chmod +x GoHttpRequestTaskProxy
 #expose the port
 EXPOSE 8080
 
 #run the executable
-CMD [./GoHttpRequestTaskProxy]
+CMD ["./GoHttpRequestTaskProxy"]
