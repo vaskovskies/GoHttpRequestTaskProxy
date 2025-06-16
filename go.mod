@@ -1,4 +1,4 @@
-module GoHttpRequestProxy
+module GoHttpRequestTaskProxy
 
 go 1.24.4
 

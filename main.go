@@ -7,7 +7,7 @@ DELETE /task/<taskid>      :  delete a task by ID
 package main
 
 import (
-	"GoHttpRequestProxy/internal/taskstore"
+	"GoHttpRequestTaskProxy/internal/taskstore"
 	"bytes"
 	"net/http"
 	"strconv"
