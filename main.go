@@ -1,9 +1,3 @@
-/*
-POST   /task/              :  create a task, returns ID
-GET    /task/<taskid>      :  returns a single task by ID
-GET    /task/              :  returns all tasks
-DELETE /task/<taskid>      :  delete a task by ID
-*/
 package main
 
 import (
@@ -120,14 +114,6 @@ func (ts *taskServer) deleteTaskHandler(c *gin.Context) {
 		c.String(http.StatusNotFound, err.Error())
 	}
 }
-
-/*
-func (ts *taskServer) tagHandler(c *gin.Context) {
-	tag := c.Params.ByName("tag")
-	tasks := ts.store.GetTasksByTag(tag)
-	c.JSON(http.StatusOK, tasks)
-}
-*/
 
 func main() {
 	router := gin.Default()

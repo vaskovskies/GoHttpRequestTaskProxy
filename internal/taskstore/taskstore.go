@@ -15,8 +15,6 @@ type Task struct {
 	ScheduledEndTime   string            `json:"scheduledEndTime"`
 }
 
-// this is the taskstore abstraction, I need to use ORM to connect this to postgres instead, using map[int]Task in-memory
-// makes it so that it doesn't survive server shutdowns
 type TaskStore struct {
 	sync.Mutex
 
@@ -45,9 +43,6 @@ func (ts *TaskStore) CreateTask(status string, httpStatusCode int, headers map[s
 		Length:             length,
 		ScheduledStartTime: scheduledStartTime,
 		ScheduledEndTime:   ""}
-
-	//	task.Tags = make([]string, len(tags))
-	//copy(task.Tags, tags)
 
 	ts.tasks[ts.nextId] = task
 	ts.nextId++
