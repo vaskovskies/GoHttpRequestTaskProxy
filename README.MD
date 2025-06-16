@@ -18,6 +18,10 @@ DELETE /task/<taskid>      :  delete a task by ID
 
 DELETE /task/			   :  delete all tasks
 
+# How to run
+
+    docker compose up -d go_db
+    docker compose up -d go-app
 
 # Roadmap
 

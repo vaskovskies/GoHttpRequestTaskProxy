@@ -5,10 +5,10 @@ FROM golang:1.24.4
 WORKDIR /app
 
 #copy source files
-COPY . .
+COPY .. .
 
 #download and install the dependencies
-RUN go get -d -v ./...
+RUN go get -d -v ../...
 
 #build the go app
 RUN go build -o GoHttpRequestTaskProxy
