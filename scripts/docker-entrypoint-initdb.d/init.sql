@@ -6,5 +6,5 @@ CREATE TABLE IF NOT EXISTS tasks (
     body TEXT NOT NULL,
     length BIGINT NOT NULL,
     scheduled_start_time TIMESTAMP NOT NULL,
-    scheduled_end_time TIMESTAMP NOT NULL
+    scheduled_end_time TIMESTAMP NULL
 );

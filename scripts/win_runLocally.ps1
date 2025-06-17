@@ -1,8 +1,8 @@
 # Set the environment variable temporarily
-$env:DATABASE_URL = "host=go_db user=postgres password=postgres dbname=postgres sslmode=disable"
+$env:DATABASE_URL = "postgresql://postgres:postgres@localhost:5432"
 
 # Change to the parent directory
-Set-Location ..
+#Set-Location ..
 
 # Run the Go application
 go run main.go

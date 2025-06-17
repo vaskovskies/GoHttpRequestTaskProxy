@@ -3,6 +3,7 @@ package main
 import (
 	"GoHttpRequestTaskProxy/internal/taskstore"
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -15,13 +16,20 @@ type taskServer struct {
 	store *taskstore.TaskStore
 }
 
-func NewTaskServer() *taskServer {
+func NewTaskServer() (*taskServer, error) {
+	//store of the taskServer is nil???
 	store := taskstore.New()
-	return &taskServer{store: store}
+	if store == nil {
+		return nil, fmt.Errorf("couldn't create taskstore (is database online and are the login credentials correct?)")
+	}
+	return &taskServer{store: store}, nil
 }
 
 func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
-	allTasks := ts.store.GetAllTasks()
+	allTasks, err := ts.store.GetAllTasks()
+	if err != nil {
+		return
+	}
 	c.JSON(http.StatusOK, allTasks)
 }
 
@@ -43,11 +51,13 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 		return
 	}
 
-	scheduledStartTime := time.Now().Format(time.RFC3339Nano)
-	id := ts.store.CreateTask("in_process", 202, make(map[string]string), 0, scheduledStartTime)
+	scheduledStartTime := time.Now()
+	id, err := ts.store.CreateTask("in_process", 202, make(map[string]string), 0, scheduledStartTime)
 
+	if err != nil {
+		return
+	}
 	var req *http.Request
-	var err error
 
 	if rt.Method == "GET" {
 		req, err = http.NewRequest("GET", rt.Url, nil)
@@ -57,7 +67,7 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	}
 
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), "", 0, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), "", 0, scheduledStartTime, time.Now())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -71,7 +81,7 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	headers := make(map[string]string)
 
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, "", 0, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, "", 0, scheduledStartTime, time.Now())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -86,12 +96,12 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	defer resp.Body.Close()
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, "", 0, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, "", 0, scheduledStartTime, time.Now())
 		return
 	}
 	defer resp.Body.Close() // Don't forget to close the body
 
-	ts.store.ChangeTask(id, "done", resp.StatusCode, headers, string(bodyBytes), resp.ContentLength, scheduledStartTime, time.Now().Format(time.RFC3339Nano))
+	ts.store.ChangeTask(id, "done", resp.StatusCode, headers, string(bodyBytes), resp.ContentLength, scheduledStartTime, time.Now())
 	c.JSON(http.StatusOK, gin.H{"Id": id})
 }
 
@@ -125,7 +135,11 @@ func (ts *taskServer) deleteTaskHandler(c *gin.Context) {
 
 func main() {
 	router := gin.Default()
-	server := NewTaskServer()
+	server, err := NewTaskServer()
+	if err != nil {
+		return
+	}
+	defer server.store.CloseDatabasePool()
 
 	router.POST("/task/", server.createTaskHandler)
 	router.GET("/task/", server.getAllTasksHandler)

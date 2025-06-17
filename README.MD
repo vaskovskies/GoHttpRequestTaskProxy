@@ -38,14 +38,17 @@ After that, it is possible run it locally with
 
     go run main.go
 
-You can use the win_runLocally.ps1 script in scripts/ to  do that for you on Windows.
+You can use the win_runLocally.ps1 script in main folder to do that for you on Windows.
 
 
 # Roadmap
 
 - [X] Implement basic prototype
-- [X] Add docker container
-- [ ] Implement the database
-- [ ] Port code to work with the database instead of an array
+- [X] Add docker containers (postgres database server, REST server)
+- [X] Implement the database
+- [X] Port code to work with the database instead of an array
 - [ ] Add unit tests
 - [ ] Add get request parameterization 
+- [ ] Create OpenAPI schema
+- [ ] Implement http authorization
+- [ ] Proper error handling (use fmt.Errorf)
