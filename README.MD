@@ -50,10 +50,9 @@ You can use the win_runLocally.ps1 script in main folder to do that for you on W
 - [X] Port code to work with the database instead of an array
 - [X] Implement basic http authentication
 - [ ] Add unit tests
-- [ ] Create OpenAPI schema
+- [X] Create OpenAPI schema
 - [ ] Add get request parameterization 
 
 # Issues
 
-- Body {} in post request to /task/ can't be nil and will potentially fail with it not present. Add an asterisk (*) before string and handle the use case when the body is not needed.
 - In the tasks, the body is displayed incorrectly on get request, with the escape characters displayed as their escape sequence (\n, \). This is related to ginContext.JSON(). Relevant stackoverflow issue: https://stackoverflow.com/questions/73460507/json-response-in-gogin-without-escape-characters

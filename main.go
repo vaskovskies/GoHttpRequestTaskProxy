@@ -9,7 +9,11 @@ import (
 	"strconv"
 	"time"
 
+	_ "GoHttpRequestTaskProxy/docs"
+
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type taskServer struct {
@@ -24,25 +28,61 @@ func NewTaskServer() (*taskServer, error) {
 	return &taskServer{store: store}, nil
 }
 
+// Get all tasks
+// @Summary Get all tasks
+// @Schemes
+// @Description A JSON array of tasks
+// @Accept json
+// @Produce json
+// @Success 200 {array} taskstore.Task
+// @Failure 500
+// @Router /task/ [get]
 func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 	allTasks, err := ts.store.GetAllTasks()
 	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, allTasks)
 }
 
+// Delete all tasks
+// @Summary Delete all tasks
+// @Schemes
+// @Description Deletes all tasks on the server. Requires authorization.
+// @Accept json
+// @Produce json
+// @Success 200
+// @Router /task/ [delete]
+// @security BasicAuth
 func (ts *taskServer) deleteAllTasksHandler(c *gin.Context) {
-	ts.store.DeleteAllTasks()
+	err := ts.store.DeleteAllTasks()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, nil)
 }
 
+// RequestTask represents the request body for creating a task
+// @Description Request body for creating a task
+type RequestTask struct {
+	Method  string            `json:"method"`  // The HTTP method (e.g., GET, POST)
+	Url     string            `json:"url"`     // The URL of the third-party service
+	Headers map[string]string `json:"headers"` // The headers to include in the request
+	Body    string            `json:"body"`    // The body of the request (optional)
+}
+
+// Create a task
+// @Summary Create a task
+// @Schemes
+// @Description Create a task on the server by providing the third-party serviceurl, method, headers and optionally a body. Returns a json containing the id of the task on success.
+// @Accept json
+// @Produce json
+// @Param request body RequestTask true "Task request body"
+// @Success 200
+// @Router /task/ [post]
 func (ts *taskServer) createTaskHandler(c *gin.Context) {
-	type RequestTask struct {
-		Method  string            `json:"method"`
-		Url     string            `json:"url"`
-		Headers map[string]string `json:"headers"`
-		Body    string            `json:"body"`
-	}
 
 	var rt RequestTask
 	if err := c.ShouldBindJSON(&rt); err != nil {
@@ -54,6 +94,7 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	id, err := ts.store.CreateTask("in_process", 202, make(map[string]string), 0, scheduledStartTime)
 
 	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 	var req *http.Request
@@ -66,8 +107,8 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	}
 
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), "", 0, scheduledStartTime, time.Now())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), 0, scheduledStartTime, time.Now())
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -80,8 +121,8 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	headers := make(map[string]string)
 
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, "", 0, scheduledStartTime, time.Now())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, err.Error(), 0, scheduledStartTime, time.Now())
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -95,7 +136,8 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	defer resp.Body.Close()
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, "", 0, scheduledStartTime, time.Now())
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, err.Error(), 0, scheduledStartTime, time.Now())
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 	defer resp.Body.Close()
@@ -104,6 +146,15 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"Id": id})
 }
 
+// Get a task by id
+// @Summary Get a task by id
+// @Schemes
+// @Description A JSON task
+// @Accept json
+// @Produce json
+// @Param id path int true "Task ID"
+// @Success 200 {object} taskstore.Task
+// @Router /task/{id} [get]
 func (ts *taskServer) getTaskHandler(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Params.ByName("id"), 10, 64)
 	if err != nil {
@@ -120,6 +171,16 @@ func (ts *taskServer) getTaskHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, task)
 }
 
+// Delete a task with a specific id
+// @Summary Delete a task with a specific id
+// @Schemes
+// @Description Returns 200 on success, 404 if the task does not exist and a bad request when the id is not a number.
+// @Accept json
+// @Produce json
+// @Param id path int true "Task ID"
+// @Success 200
+// @Router /task/{id} [delete]
+// @security BasicAuth
 func (ts *taskServer) deleteTaskHandler(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Params.ByName("id"), 10, 64)
 	if err != nil {
@@ -132,6 +193,11 @@ func (ts *taskServer) deleteTaskHandler(c *gin.Context) {
 	}
 }
 
+// @title GoHttpRequestTaskProxy
+// @version 1.0
+// @description This is an API that sends requests to third party services and stores the responses in a tasks database
+// @host localhost:8080
+// @BasePath /
 func main() {
 	router := gin.Default()
 	server, err := NewTaskServer()
@@ -148,6 +214,8 @@ func main() {
 	router.GET("/task/:id", server.getTaskHandler)
 	router.DELETE("/task/", gin.BasicAuth(accounts), server.deleteAllTasksHandler)
 	router.DELETE("/task/:id", gin.BasicAuth(accounts), server.deleteTaskHandler)
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	router.Run(":8080")
 }

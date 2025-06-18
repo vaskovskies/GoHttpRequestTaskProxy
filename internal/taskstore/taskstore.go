@@ -10,15 +10,17 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// Task represents a task in the system
+// @Description Task model
 type Task struct {
-	Id                 int64             `json:"id"`
-	Status             string            `json:"status"`
-	HttpStatusCode     int               `json:"httpStatusCode"`
-	Headers            map[string]string `json:"headers"`
-	Body               string            `json:"body"`
-	Length             int64             `json:"length"`
-	ScheduledStartTime time.Time         `json:"scheduledStartTime"`
-	ScheduledEndTime   *time.Time        `json:"scheduledEndTime"`
+	Id                 int64             `json:"id"`                 // The ID of the task
+	Status             string            `json:"status"`             // The status of the task:done/in-progress/error
+	HttpStatusCode     int               `json:"httpStatusCode"`     // The httpStatusCode of the HTTP response or Internal Server Error (500) in case of server errors
+	Headers            map[string]string `json:"headers"`            // Json array containing the headers of the HTTP response (optional)
+	Body               string            `json:"body"`               // The body of the HTTP response
+	Length             int64             `json:"length"`             // The content length of the HTTP response
+	ScheduledStartTime time.Time         `json:"scheduledStartTime"` // The time and date at which the task was sent to the server for processing
+	ScheduledEndTime   *time.Time        `json:"scheduledEndTime"`   // The time and date at which the task was done processing
 }
 
 type TaskStore struct {

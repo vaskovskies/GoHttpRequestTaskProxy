@@ -1,0 +1,147 @@
+basePath: /
+definitions:
+  main.RequestTask:
+    description: Request body for creating a task
+    properties:
+      body:
+        description: The body of the request (optional)
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        description: The headers to include in the request
+        type: object
+      method:
+        description: The HTTP method (e.g., GET, POST)
+        type: string
+      url:
+        description: The URL of the third-party service
+        type: string
+    type: object
+  taskstore.Task:
+    description: Task model
+    properties:
+      body:
+        description: The body of the HTTP response
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        description: Json array containing the headers of the HTTP response
+        type: object
+      httpStatusCode:
+        description: The httpStatusCode of the HTTP response or Internal Server Error
+          (500) in case of server errors
+        type: integer
+      id:
+        description: The ID of the task
+        type: integer
+      length:
+        description: The content length of the HTTP response
+        type: integer
+      scheduledEndTime:
+        description: The time and date at which the task was done processing
+        type: string
+      scheduledStartTime:
+        description: The time and date at which the task was sent to the server for
+          processing
+        type: string
+      status:
+        description: The status of the task:done/in-progress/error
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is an API that sends requests to third party services and stores
+    the responses in a tasks database
+  title: GoHttpRequestTaskProxy
+  version: "1.0"
+paths:
+  /task/:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes all tasks on the server. Requires authorization.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BasicAuth: []
+      summary: Delete all tasks
+    get:
+      consumes:
+      - application/json
+      description: A JSON array of tasks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/taskstore.Task'
+            type: array
+        "500":
+          description: Internal Server Error
+      summary: Get all tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a task on the server by providing the third-party serviceurl,
+        method, headers and optionally a body. Returns a json containing the id of
+        the task on success.
+      parameters:
+      - description: Task request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/main.RequestTask'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Create a task
+  /task/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Returns 200 on success, 404 if the task does not exist and a bad
+        request when the id is not a number.
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BasicAuth: []
+      summary: Delete a task with a specific id
+    get:
+      consumes:
+      - application/json
+      description: A JSON task
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/taskstore.Task'
+      summary: Get a task by id
+swagger: "2.0"
