@@ -1,0 +1,5 @@
+# Ignore the pgdata folder in deployments
+deployments/pgdata/
+
+# Ignore any pgdata folder in the repository
+pgdata/
