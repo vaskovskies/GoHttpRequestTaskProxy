@@ -25,9 +25,10 @@ If you want to run this out of the deployment folder:
     docker compose up -d go_db
     docker compose up -d go-app
 
-If you  want to run the app out of the project root folder:
+If you want to run the app out of the project root folder:
 
     docker compose -f deployments/docker-compose.yml up -d go-app
+    docker compose -f deployments/docker-compose.yml up -d go_db
 
 ## Running the server locally
 
@@ -56,3 +57,4 @@ You can use the win_runLocally.ps1 script in main folder to do that for you on W
 
 - Body {} in request can't be nil, add * before string?
 - Database repository isn't separate and is inside the controller. (Since there is only one controller using the database this is fine now, but if I want to use the same database in other controllers in the future there will be duplicate code everywhere)
+- In the tasks, the body is displayed incorrectly on get request, with the escape characters displayed as their escape sequence (\n, \). This is related to ginContext.JSON(). Relevant stackoverflow issue: https://stackoverflow.com/questions/73460507/json-response-in-gogin-without-escape-characters
