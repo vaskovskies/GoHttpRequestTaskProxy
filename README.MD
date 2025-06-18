@@ -50,7 +50,6 @@ You can use the win_runLocally.ps1 script in main folder to do that for you on W
 - [ ] Implement http authorization
 - [ ] Add unit tests
 - [ ] Create OpenAPI schema
-- [ ] Proper error handling for custom errors (use fmt.Errorf)
 - [ ] Add get request parameterization 
 
 # Issues

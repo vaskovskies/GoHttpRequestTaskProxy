@@ -30,18 +30,18 @@ func (ts *TaskStore) CloseDatabasePool() {
 	ts.dbPool.Close()
 }
 
-func New() *TaskStore {
+func New() (*TaskStore, error) {
 	ts := &TaskStore{}
 	pool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	ts.dbPool = pool
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	err = ts.initDb()
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return ts
+	return ts, nil
 }
 
 // Initiliaze database if the database is run locally or if docker initilization script failed

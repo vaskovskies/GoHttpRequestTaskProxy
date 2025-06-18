@@ -17,9 +17,9 @@ type taskServer struct {
 }
 
 func NewTaskServer() (*taskServer, error) {
-	store := taskstore.New()
-	if store == nil {
-		return nil, fmt.Errorf("couldn't create taskstore (is database online and are the login credentials correct?)")
+	store, err := taskstore.New()
+	if err != nil {
+		return nil, err
 	}
 	return &taskServer{store: store}, nil
 }
@@ -136,6 +136,7 @@ func main() {
 	router := gin.Default()
 	server, err := NewTaskServer()
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	defer server.store.CloseDatabasePool()
