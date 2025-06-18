@@ -30,7 +30,6 @@ func (ts *TaskStore) CloseDatabasePool() {
 	ts.dbPool.Close()
 }
 
-// this is the initializer
 func New() *TaskStore {
 	ts := &TaskStore{}
 	pool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
@@ -45,7 +44,8 @@ func New() *TaskStore {
 	return ts
 }
 
-// Initiliaze database if ran locally or docker initilization script failed
+// Initiliaze database if the database is run locally or if docker initilization script failed
+
 func (ts *TaskStore) initDb() error {
 	_, err := ts.dbPool.Exec(context.Background(), `
 	CREATE TABLE IF NOT EXISTS tasks (
@@ -68,20 +68,6 @@ func (ts *TaskStore) CreateTask(status string, httpStatusCode int, headers map[s
 	ts.Lock()
 	defer ts.Unlock()
 
-	/*
-		task := Task{
-			Id:                 ts.nextId,
-			Status:             status,
-			HttpStatusCode:     httpStatusCode,
-			Headers:            headers,
-			Body:               "",
-			Length:             length,
-			ScheduledStartTime: scheduledStartTime,
-			ScheduledEndTime:   ""}
-
-		ts.tasks[ts.nextId] = task
-		ts.nextId++
-	*/
 	err = ts.dbPool.QueryRow(context.Background(),
 		`INSERT INTO tasks (status,http_status_code,headers,body,length,scheduled_start_time,scheduled_end_time) 
 		VALUES ($1,$2,$3,'',$4,$5,NULL) 
@@ -100,7 +86,7 @@ func (ts *TaskStore) GetTask(id int64) (task Task, err error) {
 	ts.Lock()
 	defer ts.Unlock()
 
-	var headersJSON []byte // Temporary variable to hold JSONB data
+	var headersJSON []byte
 	err = ts.dbPool.QueryRow(context.Background(),
 		"SELECT id,status,http_status_code,headers,body,length,scheduled_start_time,scheduled_end_time FROM tasks where id=$1",
 		id).Scan(&task.Id, &task.Status, &task.HttpStatusCode, &headersJSON, &task.Body, &task.Length, &task.ScheduledStartTime, &task.ScheduledEndTime)
@@ -149,12 +135,6 @@ func (ts *TaskStore) GetAllTasks() ([]Task, error) {
 	ts.Lock()
 	defer ts.Unlock()
 
-	/*
-		allTasks := make([]Task, 0, len(ts.tasks))
-		for _, task := range ts.tasks {
-			allTasks = append(allTasks, task)
-		}
-	*/
 	var allTasks []Task
 	rows, err := ts.dbPool.Query(context.Background(),
 		"SELECT id,status,http_status_code,headers,body,length,scheduled_start_time,scheduled_end_time FROM tasks")
@@ -165,8 +145,8 @@ func (ts *TaskStore) GetAllTasks() ([]Task, error) {
 
 	for rows.Next() {
 		var task Task
-		var headersJSON []byte // Temporary variable to hold JSONB data
-		//it's failing here
+		var headersJSON []byte
+
 		if err := rows.Scan(&task.Id, &task.Status, &task.HttpStatusCode, &headersJSON, &task.Body, &task.Length, &task.ScheduledStartTime, &task.ScheduledEndTime); err != nil {
 			return nil, err
 		}
@@ -176,12 +156,6 @@ func (ts *TaskStore) GetAllTasks() ([]Task, error) {
 		}
 		allTasks = append(allTasks, task)
 	}
-
-	/*
-		if err := rows.Err(); err != nil {
-			return nil, err
-		}
-	*/
 
 	return allTasks, nil
 }

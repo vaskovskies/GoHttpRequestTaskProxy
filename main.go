@@ -17,7 +17,6 @@ type taskServer struct {
 }
 
 func NewTaskServer() (*taskServer, error) {
-	//store of the taskServer is nil???
 	store := taskstore.New()
 	if store == nil {
 		return nil, fmt.Errorf("couldn't create taskstore (is database online and are the login credentials correct?)")
@@ -99,7 +98,7 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, "", 0, scheduledStartTime, time.Now())
 		return
 	}
-	defer resp.Body.Close() // Don't forget to close the body
+	defer resp.Body.Close()
 
 	ts.store.ChangeTask(id, "done", resp.StatusCode, headers, string(bodyBytes), resp.ContentLength, scheduledStartTime, time.Now())
 	c.JSON(http.StatusOK, gin.H{"Id": id})
