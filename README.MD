@@ -48,7 +48,7 @@ You can use the win_runLocally.ps1 script in main folder to do that for you on W
 - [X] Add docker containers (postgres database server, REST server)
 - [X] Implement the database
 - [X] Port code to work with the database instead of an array
-- [ ] Implement http authorization
+- [X] Implement basic http authentication
 - [ ] Add unit tests
 - [ ] Create OpenAPI schema
 - [ ] Add get request parameterization 

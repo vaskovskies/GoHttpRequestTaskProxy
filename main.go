@@ -141,11 +141,13 @@ func main() {
 	}
 	defer server.store.CloseDatabasePool()
 
+	accounts := gin.Accounts{"admin": "secret"}
+
 	router.POST("/task/", server.createTaskHandler)
 	router.GET("/task/", server.getAllTasksHandler)
-	router.DELETE("/task/", server.deleteAllTasksHandler)
 	router.GET("/task/:id", server.getTaskHandler)
-	router.DELETE("/task/:id", server.deleteTaskHandler)
+	router.DELETE("/task/", gin.BasicAuth(accounts), server.deleteAllTasksHandler)
+	router.DELETE("/task/:id", gin.BasicAuth(accounts), server.deleteTaskHandler)
 
 	router.Run(":8080")
 }
