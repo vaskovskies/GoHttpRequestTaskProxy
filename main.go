@@ -17,7 +17,8 @@ import (
 )
 
 type taskServer struct {
-	store *taskstore.TaskStore
+	store  *taskstore.TaskStore
+	router *gin.Engine
 }
 
 func NewTaskServer() (*taskServer, error) {
@@ -193,19 +194,13 @@ func (ts *taskServer) deleteTaskHandler(c *gin.Context) {
 	}
 }
 
-// @title GoHttpRequestTaskProxy
-// @version 1.0
-// @description This is an API that sends requests to third party services and stores the responses in a tasks database
-// @host localhost:8080
-// @BasePath /
-func main() {
+func setupServer() (*taskServer, error) {
 	router := gin.Default()
 	server, err := NewTaskServer()
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil, err
 	}
-	defer server.store.CloseDatabasePool()
 
 	accounts := gin.Accounts{"admin": "secret"}
 
@@ -217,5 +212,22 @@ func main() {
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	router.Run(":8080")
+	server.router = router
+	return server, nil
+}
+
+// @title GoHttpRequestTaskProxy
+// @version 1.0
+// @description This is an API that sends requests to third party services and stores the responses in a tasks database
+// @host localhost:8080
+// @BasePath /
+func main() {
+	server, err := setupServer()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer server.store.CloseDatabasePool()
+
+	server.router.Run(":8080")
 }
