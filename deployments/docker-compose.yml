@@ -27,6 +27,16 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ../scripts/docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
-
+  go_testdb:
+    container_name: go_testdb
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: testpostgres
+      POSTGRES_USER: testpostgres
+      POSTGRES_DB: testpostgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
 volumes:
   pgdata: {}
