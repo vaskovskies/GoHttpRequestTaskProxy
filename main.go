@@ -95,9 +95,11 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	id, err := ts.store.CreateTask("in_process", 202, make(map[string]string), 0, scheduledStartTime)
 
 	if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
+		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
+
 	var req *http.Request
 
 	if rt.Method == "GET" {
@@ -108,8 +110,8 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	}
 
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), 0, scheduledStartTime, time.Now())
-		c.String(http.StatusInternalServerError, err.Error())
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
+		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
 
@@ -122,8 +124,8 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	headers := make(map[string]string)
 
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, err.Error(), 0, scheduledStartTime, time.Now())
-		c.String(http.StatusInternalServerError, err.Error())
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
+		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
 
@@ -137,8 +139,8 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	defer resp.Body.Close()
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, err.Error(), 0, scheduledStartTime, time.Now())
-		c.String(http.StatusInternalServerError, err.Error())
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
+		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
 	defer resp.Body.Close()
