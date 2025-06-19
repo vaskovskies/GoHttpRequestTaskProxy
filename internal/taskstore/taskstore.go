@@ -3,6 +3,7 @@ package taskstore
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -109,7 +110,18 @@ func (ts *TaskStore) DeleteTask(id int64) error {
 	ts.Lock()
 	defer ts.Unlock()
 
-	_, err := ts.dbPool.Exec(context.Background(), "DELETE FROM tasks WHERE id = $1", id)
+	var exists bool
+	//check if task exists
+	err := ts.dbPool.QueryRow(context.Background(), "SELECT EXISTS 1 FROM tasks WHERE id = $1", id).Scan(&exists)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return fmt.Errorf("task does not exist")
+	}
+
+	_, err = ts.dbPool.Exec(context.Background(), "DELETE FROM tasks WHERE id = $1", id)
 
 	if err != nil {
 		return err

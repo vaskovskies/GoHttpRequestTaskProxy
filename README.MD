@@ -34,13 +34,31 @@ If you want to run the app out of the project root folder:
 
 set enviroment variable "DATABASE_URL" to
 
-    host = go_db user=postgres password=postgres dbname=postgres sslmode=disable 
+    postgresql://postgres:postgres@localhost:5432
 After that, it is possible run it locally with 
 
     go run main.go
 
 You can use the win_runLocally.ps1 script in main folder to do that for you on Windows.
 
+## Running tests
+
+<b>Make sure to run the tests inside the test docker container and to set the enviroment variables to the test container.
+Running the tests inside the production container WILL result in test failures and data loss. </b>
+
+The test docker container can be ran out of the deployments folder like this:
+    docker compose up -d go_testdb
+
+And out of the project root folder like this:
+    docker compose -f deployments/docker-compose.yml up -d go_testdb
+
+set enviroment variable "DATABASE_URL" to
+
+    postgresql://testpostgres:testpostgres@localhost:5432
+After that, it is possible run it locally with 
+
+    go test
+You can also use the scripts/win_runTests.ps1 out of the project root folder to set the enviroment variable before running the test.
 
 # Roadmap
 
@@ -49,10 +67,12 @@ You can use the win_runLocally.ps1 script in main folder to do that for you on W
 - [X] Implement the database
 - [X] Port code to work with the database instead of an array
 - [X] Implement basic http authentication
-- [ ] Add unit tests
+- [X] Add unit tests
 - [X] Create OpenAPI schema
 - [ ] Add get request parameterization 
 
 # Issues
 
-- In the tasks, the body is displayed incorrectly on get request, with the escape characters displayed as their escape sequence (\n, \). This is related to ginContext.JSON(). Relevant stackoverflow issue: https://stackoverflow.com/questions/73460507/json-response-in-gogin-without-escape-characters
+- In the tasks, the body is displayed incorrectly on get request, with the escape characters displayed as their escape sequence (\n, \). This is related to ginContext.JSON(). Relevant stackoverflow issue: https://stackoverflow.com/questions/73460507/json-response-in-gogin-without-escape-characters (actually this was probably an issue with the server i was using to test this with)
+- There are no unit tests for: if the scheduledStartTime and the scheduledEndTime are correct, if the in-progress task even exists (if the task is not done).
+- Can't run test database docker and server database docker at the same time (they use the same ports)
