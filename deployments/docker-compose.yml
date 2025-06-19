@@ -1,4 +1,4 @@
-#version: '3.9' #obsolete according to https://dev.to/ajeetraina/do-we-still-use-version-in-compose-3inp
+#version: '3.9' 
 
 services:
   go-app:

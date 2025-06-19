@@ -329,7 +329,7 @@ func TestDeleteRoutes(t *testing.T) {
 
 	assert.Equal(t, len(tasks), 0)
 
-	//test 5: test for nonexistent task deletion. This fails awesome!
+	//test 5: test for nonexistent task deletion.
 
 	w = httptest.NewRecorder()
 
