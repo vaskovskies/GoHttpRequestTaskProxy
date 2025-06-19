@@ -17,7 +17,8 @@ import (
 )
 
 type taskServer struct {
-	store *taskstore.TaskStore
+	store  *taskstore.TaskStore
+	router *gin.Engine
 }
 
 func NewTaskServer() (*taskServer, error) {
@@ -94,9 +95,11 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	id, err := ts.store.CreateTask("in_process", 202, make(map[string]string), 0, scheduledStartTime)
 
 	if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
+		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
+
 	var req *http.Request
 
 	if rt.Method == "GET" {
@@ -107,8 +110,8 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	}
 
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), 0, scheduledStartTime, time.Now())
-		c.String(http.StatusInternalServerError, err.Error())
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
+		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
 
@@ -121,8 +124,8 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	headers := make(map[string]string)
 
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, err.Error(), 0, scheduledStartTime, time.Now())
-		c.String(http.StatusInternalServerError, err.Error())
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
+		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
 
@@ -136,8 +139,8 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	defer resp.Body.Close()
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, headers, err.Error(), 0, scheduledStartTime, time.Now())
-		c.String(http.StatusInternalServerError, err.Error())
+		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
+		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
 	defer resp.Body.Close()
@@ -193,19 +196,13 @@ func (ts *taskServer) deleteTaskHandler(c *gin.Context) {
 	}
 }
 
-// @title GoHttpRequestTaskProxy
-// @version 1.0
-// @description This is an API that sends requests to third party services and stores the responses in a tasks database
-// @host localhost:8080
-// @BasePath /
-func main() {
+func setupServer() (*taskServer, error) {
 	router := gin.Default()
 	server, err := NewTaskServer()
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil, err
 	}
-	defer server.store.CloseDatabasePool()
 
 	accounts := gin.Accounts{"admin": "secret"}
 
@@ -217,5 +214,22 @@ func main() {
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	router.Run(":8080")
+	server.router = router
+	return server, nil
+}
+
+// @title GoHttpRequestTaskProxy
+// @version 1.0
+// @description This is an API that sends requests to third party services and stores the responses in a tasks database
+// @host localhost:8080
+// @BasePath /
+func main() {
+	server, err := setupServer()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer server.store.CloseDatabasePool()
+
+	server.router.Run(":8080")
 }

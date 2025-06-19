@@ -1,5 +1,3 @@
-#version: '3.9' #obsolete according to https://dev.to/ajeetraina/do-we-still-use-version-in-compose-3inp
-
 services:
   go-app:
     container_name: go-app
@@ -27,6 +25,16 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ../scripts/docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
-
+  go_testdb:
+    container_name: go_testdb
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: testpostgres
+      POSTGRES_USER: testpostgres
+      POSTGRES_DB: testpostgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ../scripts/docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
 volumes:
   pgdata: {}
