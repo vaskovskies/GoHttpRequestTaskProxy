@@ -39,7 +39,26 @@ func NewTaskServer() (*taskServer, error) {
 // @Failure 500
 // @Router /task/ [get]
 func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
-	allTasks, err := ts.store.GetAllTasks()
+	//parameter checking
+	status := c.Query("status")
+	if status != "done" && status != "in-progress" && status != "error" && status != "" {
+		c.String(http.StatusBadRequest, "error: status can only be done, in-progress, error or empty string")
+		return
+	}
+	var httpStatusCode *int
+	httpStatusCodeString := c.Query("httpStatusCode")
+	if httpStatusCodeString == "" {
+		httpStatusCode = nil
+	} else {
+		ret, err := strconv.Atoi(httpStatusCodeString)
+		httpStatusCode = &ret
+		if err != nil {
+			c.String(http.StatusBadRequest, err.Error())
+			return
+		}
+	}
+
+	allTasks, err := ts.store.GetAllTasks(status, httpStatusCode)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -92,7 +111,7 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	}
 
 	scheduledStartTime := time.Now()
-	id, err := ts.store.CreateTask("in_process", 202, make(map[string]string), 0, scheduledStartTime)
+	id, err := ts.store.CreateTask("in-progress", 202, make(map[string]string), 0, scheduledStartTime)
 
 	if err != nil {
 		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
@@ -207,6 +226,7 @@ func setupServer() (*taskServer, error) {
 	accounts := gin.Accounts{"admin": "secret"}
 
 	router.POST("/task/", server.createTaskHandler)
+	router.GET("/task", server.getAllTasksHandler)
 	router.GET("/task/", server.getAllTasksHandler)
 	router.GET("/task/:id", server.getTaskHandler)
 	router.DELETE("/task/", gin.BasicAuth(accounts), server.deleteAllTasksHandler)

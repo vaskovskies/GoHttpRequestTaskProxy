@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -112,7 +113,7 @@ func (ts *TaskStore) DeleteTask(id int64) error {
 
 	var exists bool
 	//check if task exists
-	err := ts.dbPool.QueryRow(context.Background(), "SELECT EXISTS 1 FROM tasks WHERE id = $1", id).Scan(&exists)
+	err := ts.dbPool.QueryRow(context.Background(), "SELECT EXISTS (SELECT 1 FROM tasks WHERE id = $1)", id).Scan(&exists)
 	if err != nil {
 		return err
 	}
@@ -145,13 +146,26 @@ func (ts *TaskStore) DeleteAllTasks() error {
 }
 
 // GetAllTasks returns all the tasks in the store, in arbitrary order.
-func (ts *TaskStore) GetAllTasks() ([]Task, error) {
+func (ts *TaskStore) GetAllTasks(status string, httpStatusCode *int) ([]Task, error) {
 	ts.Lock()
 	defer ts.Unlock()
 
+	//build sql string
+	queryBuilder := squirrel.Select("id,status,http_status_code,headers,body,length,scheduled_start_time,scheduled_end_time").From("tasks")
+	if status != "" {
+		queryBuilder = queryBuilder.Where("status = ?", status)
+	}
+	if httpStatusCode != nil {
+		queryBuilder = queryBuilder.Where("http_status_code = ?", *httpStatusCode)
+	}
+	queryBuilder = queryBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
 	var allTasks []Task
 	rows, err := ts.dbPool.Query(context.Background(),
-		"SELECT id,status,http_status_code,headers,body,length,scheduled_start_time,scheduled_end_time FROM tasks")
+		query, args...)
 	if err != nil {
 		return nil, err
 	}

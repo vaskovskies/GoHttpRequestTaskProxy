@@ -226,6 +226,94 @@ func TestGetRoutes(t *testing.T) {
 	assert.Equal(t, 400, w.Code)
 }
 
+func TestGetRequestParametrization(t *testing.T) {
+	err := recreateDb()
+	if err != nil {
+		t.Logf("Couldn't clean database. Is the enviroment variable set correctly? Is the database test container on?")
+		t.Fail()
+		return
+	}
+	server, err := setupServer()
+	if err != nil {
+		t.Logf("Couldn't set up test server. Is the enviroment variable set correctly? Is the database test container on?")
+		t.Fail()
+		return
+	}
+
+	//test 1: test bad requests
+
+	//invalid status
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/task?status=NOTVALID", nil)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, 400, w.Code)
+	//invalid httpStatusCode
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/task?httpStatusCode=NaN", nil)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, 400, w.Code)
+
+	//test 2: test if the parametrization works correctly
+
+	//create fake test tasks
+	server.store.CreateTask("done", 500, make(map[string]string), 0, time.Now())
+	server.store.CreateTask("done", 200, make(map[string]string), 0, time.Now())
+	server.store.CreateTask("in-progress", 202, make(map[string]string), 0, time.Now())
+	server.store.CreateTask("error", 500, make(map[string]string), 0, time.Now())
+
+	//send request for all tasks with statusCode 500
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/task?httpStatusCode=500", nil)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, 200, w.Code)
+	var allTasksResponse []taskstore.Task
+	err = json.Unmarshal(w.Body.Bytes(), &allTasksResponse)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+		return
+	}
+	for _, task := range allTasksResponse {
+		if task.HttpStatusCode != 500 {
+			t.Error("task query with parameter httpStatusCode=500 returned a task with a http status code other than 500")
+			return
+		}
+	}
+
+	//send request for all tasks with status = done
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/task?status=done", nil)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, 200, w.Code)
+	err = json.Unmarshal(w.Body.Bytes(), &allTasksResponse)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+		return
+	}
+
+	for _, task := range allTasksResponse {
+		if task.Status != "done" {
+			t.Error("task query with parameter status=done returned a task with a status other than done")
+			return
+		}
+	}
+	//send request for all tasks with status = done and httpStatusCode of 200
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/task?status=done&httpStatusCode=200", nil)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, 200, w.Code)
+	err = json.Unmarshal(w.Body.Bytes(), &allTasksResponse)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+		return
+	}
+	for _, task := range allTasksResponse {
+		if task.Status != "done" && task.HttpStatusCode != 200 {
+			t.Error("task query with parameter status=done and httpStatusCode=200 returned a task with a status other than done and httpStatusCode 200")
+			return
+		}
+	}
+}
+
 func TestDeleteRoutes(t *testing.T) {
 	err := recreateDb()
 	if err != nil {
@@ -247,6 +335,8 @@ func TestDeleteRoutes(t *testing.T) {
 	server.store.CreateTask("mockTask", 200, make(map[string]string), 0, time.Now())
 	server.store.CreateTask("mockTask", 200, make(map[string]string), 0, time.Now())
 	server.store.CreateTask("mockTask", 200, make(map[string]string), 0, time.Now())
+	ttasks, _ := server.store.GetAllTasks("", nil)
+	t.Log(ttasks[0].Id)
 
 	//test 1: check if the credentials are present
 	w := httptest.NewRecorder()
@@ -282,7 +372,7 @@ func TestDeleteRoutes(t *testing.T) {
 	//test 3: test deletion by id
 
 	//check if there are 3 tasks
-	tasks, err := server.store.GetAllTasks()
+	tasks, err := server.store.GetAllTasks("", nil)
 
 	if err != nil {
 		t.Fatalf("Failed to get tasks: %v", err)
@@ -300,7 +390,7 @@ func TestDeleteRoutes(t *testing.T) {
 
 	assert.Equal(t, 200, w.Code)
 
-	tasks, err = server.store.GetAllTasks()
+	tasks, err = server.store.GetAllTasks("", nil)
 
 	if err != nil {
 		t.Fatalf("Failed to get tasks: %v", err)
@@ -320,7 +410,7 @@ func TestDeleteRoutes(t *testing.T) {
 
 	assert.Equal(t, 200, w.Code)
 
-	tasks, err = server.store.GetAllTasks()
+	tasks, err = server.store.GetAllTasks("", nil)
 
 	if err != nil {
 		t.Fatalf("Failed to get tasks: %v", err)
