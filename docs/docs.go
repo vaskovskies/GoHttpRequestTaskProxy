@@ -34,8 +34,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "HTTP Request Code",
-                        "name": "httpRequestCode",
+                        "description": "HTTP Status Code",
+                        "name": "httpStatusCode",
                         "in": "query"
                     }
                 ],

@@ -25,6 +25,12 @@ type Task struct {
 	ScheduledEndTime   *time.Time        `json:"scheduledEndTime"`   // The time and date at which the task was done processing
 }
 
+const (
+	StatusDone       = "done"
+	StatusInProgress = "in-progress"
+	StatusError      = "error"
+)
+
 type TaskStore struct {
 	dbPool *pgxpool.Pool
 	sync.Mutex

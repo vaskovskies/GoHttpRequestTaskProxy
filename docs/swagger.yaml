@@ -80,9 +80,9 @@ paths:
         in: query
         name: status
         type: string
-      - description: HTTP Request Code
+      - description: HTTP Status Code
         in: query
-        name: httpRequestCode
+        name: httpStatusCode
         type: integer
       produces:
       - application/json
