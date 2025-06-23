@@ -29,6 +29,28 @@ func NewTaskServer() (*taskServer, error) {
 	return &taskServer{store: store}, nil
 }
 
+func processTaskParameters(c *gin.Context) (string, *int, error) {
+
+	status := c.Query("status")
+	if status != taskstore.StatusDone && status != taskstore.StatusInProgress && status != taskstore.StatusError && status != "" {
+		return "", nil, fmt.Errorf("error: status can only be done, in-progress, error or empty string")
+	}
+
+	var httpStatusCode *int
+	httpStatusCodeString := c.Query("httpStatusCode")
+	if httpStatusCodeString == "" {
+		httpStatusCode = nil
+	} else {
+		ret, err := strconv.Atoi(httpStatusCodeString)
+		httpStatusCode = &ret
+		if err != nil {
+			return status, nil, err
+		}
+	}
+
+	return status, httpStatusCode, nil
+}
+
 // Get all tasks
 // @Summary Get all tasks
 // @Schemes
@@ -42,22 +64,11 @@ func NewTaskServer() (*taskServer, error) {
 // @Router /task/ [get]
 func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 	//parameter checking
-	status := c.Query("status")
-	if status != taskstore.StatusDone && status != taskstore.StatusInProgress && status != taskstore.StatusError && status != "" {
-		c.String(http.StatusBadRequest, "error: status can only be done, in-progress, error or empty string")
+	status, httpStatusCode, err := processTaskParameters(c)
+
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
 		return
-	}
-	var httpStatusCode *int
-	httpStatusCodeString := c.Query("httpStatusCode")
-	if httpStatusCodeString == "" {
-		httpStatusCode = nil
-	} else {
-		ret, err := strconv.Atoi(httpStatusCodeString)
-		httpStatusCode = &ret
-		if err != nil {
-			c.String(http.StatusBadRequest, err.Error())
-			return
-		}
 	}
 
 	allTasks, err := ts.store.GetAllTasks(status, httpStatusCode)
