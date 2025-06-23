@@ -35,6 +35,8 @@ func NewTaskServer() (*taskServer, error) {
 // @Description A JSON array of tasks
 // @Accept json
 // @Produce json
+// @Param status query string false "Status"
+// @Param httpRequestCode query int false "HTTP Request Code"
 // @Success 200 {array} taskstore.Task
 // @Failure 500
 // @Router /task/ [get]
