@@ -58,7 +58,7 @@ func TestCreateRoute(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	task := RequestTask{
+	task := RequestBody{
 		Method: "GET",
 		Url:    "https://jsonplaceholder.typicode.com/todos/1",
 		Headers: map[string]string{
@@ -105,7 +105,7 @@ func TestGetRoutes(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
-	task := RequestTask{
+	task := RequestBody{
 		Method: "GET",
 		Url:    "https://jsonplaceholder.typicode.com/todos/1",
 		Headers: map[string]string{
@@ -123,7 +123,7 @@ func TestGetRoutes(t *testing.T) {
 	server.router.ServeHTTP(w, req)
 
 	w = httptest.NewRecorder()
-	task = RequestTask{
+	task = RequestBody{
 		Method: "POST",
 		Url:    "/task/",
 		Headers: map[string]string{
@@ -155,14 +155,14 @@ func TestGetRoutes(t *testing.T) {
 		//check if id is correct
 		assert.Equal(t, task.Id, int64(1))
 		//check if the response is expected
-		assert.Equal(t, task.Body, `{
+		assert.Equal(t, task.ResponseBody, `{
   "userId": 1,
   "id": 1,
   "title": "delectus aut autem",
   "completed": false
 }`)
 		//check if the headers are there
-		if len(task.Headers) == 0 {
+		if len(task.ResponseHeaders) == 0 {
 			t.Error("Headers map is empty when it shouldn't be")
 		}
 		//check if http status code is correct
@@ -194,9 +194,9 @@ func TestGetRoutes(t *testing.T) {
 	//check if id is correct
 	assert.Equal(t, allTasksResponse[1].Id, int64(2))
 	//check if the response is expected
-	assert.Equal(t, allTasksResponse[1].Body, `Get "http://invalid-url": dial tcp: lookup invalid-url: no such host`)
+	assert.Equal(t, allTasksResponse[1].ResponseBody, `Get "http://invalid-url": dial tcp: lookup invalid-url: no such host`)
 	//check if the headers are not present
-	if len(allTasksResponse[1].Headers) != 0 {
+	if len(allTasksResponse[1].ResponseHeaders) != 0 {
 		t.Error("Headers map is empty as it should be")
 	}
 	//check if http status code is correct
@@ -256,10 +256,10 @@ func TestGetRequestParametrization(t *testing.T) {
 	//test 2: test if the parametrization works correctly
 
 	//create fake test tasks
-	server.store.CreateTask("done", 500, make(map[string]string), 0, time.Now())
-	server.store.CreateTask("done", 200, make(map[string]string), 0, time.Now())
-	server.store.CreateTask("in-progress", 202, make(map[string]string), 0, time.Now())
-	server.store.CreateTask("error", 500, make(map[string]string), 0, time.Now())
+	server.store.CreateTask("done", 500, make(map[string]string), "dsad", 0, time.Now())
+	server.store.CreateTask("done", 200, make(map[string]string), "dsad", 0, time.Now())
+	server.store.CreateTask("in-progress", 202, make(map[string]string), "dsad", 0, time.Now())
+	server.store.CreateTask("error", 500, make(map[string]string), "dsad", 0, time.Now())
 
 	//send request for all tasks with statusCode 500
 	w = httptest.NewRecorder()
@@ -346,10 +346,10 @@ func TestDeleteRequestParametrization(t *testing.T) {
 	//test 2: test if the parametrization works correctly
 
 	//create fake test tasks
-	server.store.CreateTask("done", 500, make(map[string]string), 0, time.Now())
-	server.store.CreateTask("done", 200, make(map[string]string), 0, time.Now())
-	server.store.CreateTask("in-progress", 202, make(map[string]string), 0, time.Now())
-	server.store.CreateTask("error", 500, make(map[string]string), 0, time.Now())
+	server.store.CreateTask("done", 500, make(map[string]string), "dsad", 0, time.Now())
+	server.store.CreateTask("done", 200, make(map[string]string), "dsad", 0, time.Now())
+	server.store.CreateTask("in-progress", 202, make(map[string]string), "dsad", 0, time.Now())
+	server.store.CreateTask("error", 500, make(map[string]string), "dsad", 0, time.Now())
 
 	//send request for all tasks with statusCode 500 and status done
 	w = httptest.NewRecorder()
@@ -406,9 +406,9 @@ func TestDeleteRoutes(t *testing.T) {
 	//and instead create everything on the store directly
 
 	//create fake test tasks
-	server.store.CreateTask("mockTask", 200, make(map[string]string), 0, time.Now())
-	server.store.CreateTask("mockTask", 200, make(map[string]string), 0, time.Now())
-	server.store.CreateTask("mockTask", 200, make(map[string]string), 0, time.Now())
+	server.store.CreateTask("mockTask", 200, make(map[string]string), "dsad", 0, time.Now())
+	server.store.CreateTask("mockTask", 200, make(map[string]string), "dsad", 0, time.Now())
+	server.store.CreateTask("mockTask", 200, make(map[string]string), "dsad", 0, time.Now())
 	ttasks, _ := server.store.GetAllTasks("", nil)
 	t.Log(ttasks[0].Id)
 

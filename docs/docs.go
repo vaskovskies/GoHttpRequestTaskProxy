@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/task/": {
+        "/task": {
             "get": {
                 "description": "A JSON array of tasks",
                 "consumes": [
@@ -70,7 +70,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.RequestTask"
+                            "$ref": "#/definitions/GoHttpRequestTaskProxy.RequestTask"
                         }
                     }
                 ],
@@ -175,46 +175,16 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "main.RequestTask": {
-            "description": "Request body for creating a task",
-            "type": "object",
-            "properties": {
-                "body": {
-                    "description": "The body of the request (optional)",
-                    "type": "string"
-                },
-                "headers": {
-                    "description": "The headers to include in the request",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "method": {
-                    "description": "The HTTP method (e.g., GET, POST)",
-                    "type": "string"
-                },
-                "url": {
-                    "description": "The URL of the third-party service",
-                    "type": "string"
-                }
-            }
+        "GoHttpRequestTaskProxy.RequestTask": {
+            "type": "object"
+        },
+        "GoHttpRequestTaskProxy_cmd_go-http-request-task-proxy.RequestTask": {
+            "type": "object"
         },
         "taskstore.Task": {
             "description": "Task model",
             "type": "object",
             "properties": {
-                "body": {
-                    "description": "The body of the HTTP response",
-                    "type": "string"
-                },
-                "headers": {
-                    "description": "Json array containing the headers of the HTTP response (optional)",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
                 "httpStatusCode": {
                     "description": "The httpStatusCode of the HTTP response or Internal Server Error (500) in case of server errors",
                     "type": "integer"
@@ -226,6 +196,28 @@ const docTemplate = `{
                 "length": {
                     "description": "The content length of the HTTP response",
                     "type": "integer"
+                },
+                "requestHeaders": {
+                    "description": "Json array containing the headers of the HTTP request (optional)",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "request_body": {
+                    "description": "The body of the HTTP request",
+                    "type": "string"
+                },
+                "responseHeaders": {
+                    "description": "Json array containing the headers of the HTTP response",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "response_body": {
+                    "description": "The body of the HTTP response",
+                    "type": "string"
                 },
                 "scheduledEndTime": {
                     "description": "The time and date at which the task was done processing",

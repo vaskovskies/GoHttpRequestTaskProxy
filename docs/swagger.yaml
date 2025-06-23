@@ -1,34 +1,12 @@
 basePath: /
 definitions:
-  main.RequestTask:
-    description: Request body for creating a task
-    properties:
-      body:
-        description: The body of the request (optional)
-        type: string
-      headers:
-        additionalProperties:
-          type: string
-        description: The headers to include in the request
-        type: object
-      method:
-        description: The HTTP method (e.g., GET, POST)
-        type: string
-      url:
-        description: The URL of the third-party service
-        type: string
+  GoHttpRequestTaskProxy.RequestTask:
+    type: object
+  GoHttpRequestTaskProxy_cmd_go-http-request-task-proxy.RequestTask:
     type: object
   taskstore.Task:
     description: Task model
     properties:
-      body:
-        description: The body of the HTTP response
-        type: string
-      headers:
-        additionalProperties:
-          type: string
-        description: Json array containing the headers of the HTTP response (optional)
-        type: object
       httpStatusCode:
         description: The httpStatusCode of the HTTP response or Internal Server Error
           (500) in case of server errors
@@ -39,6 +17,22 @@ definitions:
       length:
         description: The content length of the HTTP response
         type: integer
+      request_body:
+        description: The body of the HTTP request
+        type: string
+      requestHeaders:
+        additionalProperties:
+          type: string
+        description: Json array containing the headers of the HTTP request (optional)
+        type: object
+      response_body:
+        description: The body of the HTTP response
+        type: string
+      responseHeaders:
+        additionalProperties:
+          type: string
+        description: Json array containing the headers of the HTTP response
+        type: object
       scheduledEndTime:
         description: The time and date at which the task was done processing
         type: string
@@ -58,7 +52,7 @@ info:
   title: GoHttpRequestTaskProxy
   version: "1.0"
 paths:
-  /task/:
+  /task:
     delete:
       consumes:
       - application/json
@@ -117,7 +111,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/main.RequestTask'
+          $ref: '#/definitions/GoHttpRequestTaskProxy.RequestTask'
       produces:
       - application/json
       responses:
