@@ -198,12 +198,10 @@ func (ts *TaskStore) GetAllTasks(status string, httpStatusCode *int) ([]Task, er
 		var responseHeadersJSON []byte
 
 		if err := rows.Scan(&task.Id, &task.Status, &task.HttpStatusCode, &requestHeadersJSON, &responseHeadersJSON, &task.RequestBody, &task.ResponseBody, &task.Length, &task.ScheduledStartTime, &task.ScheduledEndTime); err != nil {
-			fmt.Println("threw error @ scan")
 			return nil, err
 		}
 		task.RequestHeaders = make(map[string]string)
 		if err := json.Unmarshal(requestHeadersJSON, &task.RequestHeaders); err != nil {
-			fmt.Println("threw error @ unmarhsal requesth")
 			return make([]Task, 0), err
 		}
 		task.ResponseHeaders = make(map[string]string)

@@ -133,7 +133,7 @@ type RequestTask struct {
 func (ts *taskServer) taskWorker(id int, tasks <-chan RequestTask) {
 	defer ts.wg.Done()
 	for task := range tasks {
-		fmt.Printf("Worker %d processing task %d", id, task.Id)
+		//log.Printf("Worker %d processing task %d", id, task.Id)
 		var req *http.Request
 		var reqBodyBuf io.Reader = http.NoBody
 		if task.RequestBody.Body != "" {
