@@ -253,6 +253,7 @@ func setupServer() (*taskServer, error) {
 	router.GET("/task/", server.getAllTasksHandler)
 	router.GET("/task/:id", server.getTaskHandler)
 	router.DELETE("/task/", gin.BasicAuth(accounts), server.deleteAllTasksHandler)
+	router.DELETE("/task", gin.BasicAuth(accounts), server.deleteAllTasksHandler)
 	router.DELETE("/task/:id", gin.BasicAuth(accounts), server.deleteTaskHandler)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
