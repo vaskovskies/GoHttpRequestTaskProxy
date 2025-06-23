@@ -70,7 +70,8 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Deletes all tasks on the server. Requires authorization.
+      description: Deletes all tasks on the server. Requires authorization. Can be
+        supplied parameters status and httpStatusCode to delete tasks with those parameters.
       parameters:
       - description: Status
         in: query
@@ -91,7 +92,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: A JSON array of tasks
+      description: Returns a JSON array of tasks. Can be supplied parameters status
+        and httpStatusCode to select tasks with those parameters.
       parameters:
       - description: Status
         in: query
