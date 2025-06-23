@@ -12,11 +12,11 @@ POST   /task/              :  create a task, returns ID
 
 GET    /task/<taskid>      :  returns a single task by ID
 
-GET    /task/              :  returns all tasks
+GET    /task/              :  returns all tasks. Can be filtered by status and httpStatusCode
 
 DELETE /task/<taskid>      :  delete a task by ID
 
-DELETE /task/			   :  delete all tasks
+DELETE /task/			   :  delete all tasks. Can be filtered by status and httpStatusCode
 
 # How to run
 
