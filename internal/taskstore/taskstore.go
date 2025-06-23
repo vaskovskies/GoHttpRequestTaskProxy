@@ -64,7 +64,7 @@ func (ts *TaskStore) initDb() error {
     status VARCHAR(50) NOT NULL,
     http_status_code INT NOT NULL,
     request_headers JSONB NOT NULL,
-	response_headers JSONB NOT NULL,
+	response_headers JSONB NULL,
     request_body TEXT NOT NULL,
 	response_body TEXT,
     length BIGINT NOT NULL,
@@ -97,7 +97,7 @@ func (ts *TaskStore) GetTask(id int64) (task Task, err error) {
 	var requestHeadersJSON []byte
 	var responseHeadersJSON []byte
 	err = ts.dbPool.QueryRow(context.Background(),
-		"SELECT id,status,http_status_code,request_headers,response_headers,requestBody,response_Body,length,scheduled_start_time,scheduled_end_time FROM tasks where id=$1",
+		"SELECT id,status,http_status_code,request_headers,response_headers,request_body,response_body,length,scheduled_start_time,scheduled_end_time FROM tasks where id=$1",
 		id).Scan(&task.Id, &task.Status, &task.HttpStatusCode, &requestHeadersJSON, &responseHeadersJSON, &task.RequestBody, &task.ResponseBody, &task.Length, &task.ScheduledStartTime, &task.ScheduledEndTime)
 	if err != nil {
 		println(err.Error())
@@ -214,12 +214,12 @@ func (ts *TaskStore) GetAllTasks(status string, httpStatusCode *int) ([]Task, er
 	return allTasks, nil
 }
 
-func (ts *TaskStore) ChangeTask(id int64, status string, httpStatusCode int, response_headers map[string]string, responseBody *string, length int64, scheduledStartTime time.Time, scheduledEndTime time.Time) error {
+func (ts *TaskStore) ChangeTask(id int64, status string, httpStatusCode int, response_headers map[string]string, responseBody *string, length int64, scheduledEndTime time.Time) error {
 	_, err := ts.dbPool.Exec(context.Background(),
 		`UPDATE TASKS 
-		SET status=$2,http_status_code=$3,response_headers=$4,response_body=$5,length=$6,scheduled_start_time=$7,scheduled_end_time=$8 
+		SET status=$2,http_status_code=$3,response_headers=$4,response_body=$5,length=$6,scheduled_end_time=$7 
 		WHERE id=$1;`,
-		id, status, httpStatusCode, response_headers, responseBody, length, scheduledStartTime, scheduledEndTime)
+		id, status, httpStatusCode, response_headers, responseBody, length, scheduledEndTime)
 	if err != nil {
 		return err
 	}

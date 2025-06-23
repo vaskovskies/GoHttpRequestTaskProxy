@@ -28,12 +28,14 @@ func recreateDb() error {
 
 	pool.Exec(context.Background(), `
 	DROP TABLE tasks;
-	CREATE TABLE tasks (
+	CREATE TABLE IF NOT EXISTS tasks (
     id BIGSERIAL PRIMARY KEY, 
     status VARCHAR(50) NOT NULL,
     http_status_code INT NOT NULL,
-    headers JSONB NOT NULL,
-    body TEXT NOT NULL,
+    request_headers JSONB NOT NULL,
+	response_headers JSONB NULL,
+    request_body TEXT NOT NULL,
+	response_body TEXT,
     length BIGINT NOT NULL,
     scheduled_start_time TIMESTAMP NOT NULL,
     scheduled_end_time TIMESTAMP NULL

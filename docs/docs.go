@@ -70,7 +70,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/GoHttpRequestTaskProxy.RequestTask"
+                            "$ref": "#/definitions/main.RequestBody"
                         }
                     }
                 ],
@@ -175,11 +175,30 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "GoHttpRequestTaskProxy.RequestTask": {
-            "type": "object"
-        },
-        "GoHttpRequestTaskProxy_cmd_go-http-request-task-proxy.RequestTask": {
-            "type": "object"
+        "main.RequestBody": {
+            "description": "Request body for creating a task",
+            "type": "object",
+            "properties": {
+                "body": {
+                    "description": "The body of the request (optional)",
+                    "type": "string"
+                },
+                "headers": {
+                    "description": "The headers to include in the request",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "method": {
+                    "description": "The HTTP method (e.g., GET, POST)",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "The URL of the third-party service",
+                    "type": "string"
+                }
+            }
         },
         "taskstore.Task": {
             "description": "Task model",

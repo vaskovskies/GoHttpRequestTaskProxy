@@ -1,8 +1,22 @@
 basePath: /
 definitions:
-  GoHttpRequestTaskProxy.RequestTask:
-    type: object
-  GoHttpRequestTaskProxy_cmd_go-http-request-task-proxy.RequestTask:
+  main.RequestBody:
+    description: Request body for creating a task
+    properties:
+      body:
+        description: The body of the request (optional)
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        description: The headers to include in the request
+        type: object
+      method:
+        description: The HTTP method (e.g., GET, POST)
+        type: string
+      url:
+        description: The URL of the third-party service
+        type: string
     type: object
   taskstore.Task:
     description: Task model
@@ -111,7 +125,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/GoHttpRequestTaskProxy.RequestTask'
+          $ref: '#/definitions/main.RequestBody'
       produces:
       - application/json
       responses:

@@ -6,7 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"sync"
+	"syscall"
 	"time"
 
 	_ "GoHttpRequestTaskProxy/docs"
@@ -19,6 +23,7 @@ import (
 type taskServer struct {
 	store  *taskstore.TaskStore
 	router *gin.Engine
+	tasks  chan RequestTask
 }
 
 func NewTaskServer() (*taskServer, error) {
@@ -107,7 +112,7 @@ func (ts *taskServer) deleteAllTasksHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, nil)
 }
 
-// RequestTask represents the request body for creating a task
+// RequestBody represents the request body for creating a task
 // @Description Request body for creating a task
 type RequestBody struct {
 	Method  string            `json:"method"`  // The HTTP method (e.g., GET, POST)
@@ -117,9 +122,57 @@ type RequestBody struct {
 }
 
 type RequestTask struct {
-	id                 int
-	requestBody        RequestBody
-	scheduledStartTime time.Time
+	Id          int64
+	RequestBody RequestBody
+}
+
+func (ts *taskServer) taskWorker(id int, tasks <-chan RequestTask, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for task := range tasks {
+		fmt.Printf("Worker %d processing task %d", id, task.Id)
+		var req *http.Request
+		var reqBodyBuf io.Reader = http.NoBody
+		if task.RequestBody.Body != "" {
+			reqBodyBuf = bytes.NewBuffer([]byte(task.RequestBody.Body))
+		}
+		req, err := http.NewRequest(task.RequestBody.Method, task.RequestBody.Url, reqBodyBuf)
+		req.Header.Set("Content-Type", "application/json")
+
+		if err != nil {
+			errorMessage := err.Error()
+			ts.store.ChangeTask(task.Id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), time.Now())
+			continue
+		}
+
+		client := &http.Client{
+			Timeout: 5 * time.Second,
+		}
+
+		resp, err := client.Do(req)
+
+		if err != nil {
+			continue
+		}
+
+		headers := make(map[string]string)
+
+		for key, values := range resp.Header {
+			if len(values) > 0 {
+				headers[key] = values[0]
+			}
+		}
+
+		responseBodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			resp.Body.Close()
+			errorMessage := err.Error()
+			ts.store.ChangeTask(task.Id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), time.Now())
+			continue
+		}
+		resp.Body.Close()
+		responseBodyString := string(responseBodyBytes)
+		ts.store.ChangeTask(task.Id, taskstore.StatusDone, resp.StatusCode, headers, &responseBodyString, resp.ContentLength, time.Now())
+	}
 }
 
 // Create a task
@@ -128,7 +181,7 @@ type RequestTask struct {
 // @Description Create a task on the server by providing the third-party serviceurl, method, headers and optionally a body. Returns a json containing the id of the task on success.
 // @Accept json
 // @Produce json
-// @Param request body RequestTask true "Task request body"
+// @Param request body RequestBody true "Task request body"
 // @Success 200
 // @Router /task [post]
 func (ts *taskServer) createTaskHandler(c *gin.Context) {
@@ -149,56 +202,15 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 
 	if err != nil {
 		errorMessage := err.Error()
-		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), scheduledStartTime, time.Now())
+		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), time.Now())
 		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
 
-	//this should be in worker and send requestTask to worker
-
-	var req *http.Request
-
-	req, err = http.NewRequest(rt.Method, rt.Url, bytes.NewBuffer([]byte(rt.Body)))
-	req.Header.Set("Content-Type", "application/json")
-
-	if err != nil {
-		errorMessage := err.Error()
-		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), scheduledStartTime, time.Now())
-		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
-		return
-	}
-
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	resp, err := client.Do(req)
-
-	if err != nil {
-		c.String(http.StatusInternalServerError, "error: couldn't create task")
-		return
-	}
-	defer resp.Body.Close()
-
-	headers := make(map[string]string)
-
-	for key, values := range resp.Header {
-
-		if len(values) > 0 {
-			headers[key] = values[0]
-		}
-	}
-
-	responseBodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errorMessage := err.Error()
-		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), scheduledStartTime, time.Now())
-		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
-		return
-	}
-	responseBodyString := string(responseBodyBytes)
-	ts.store.ChangeTask(id, taskstore.StatusDone, resp.StatusCode, headers, &responseBodyString, resp.ContentLength, scheduledStartTime, time.Now())
 	c.JSON(http.StatusOK, gin.H{"Id": id})
+	task := RequestTask{Id: id, RequestBody: rt}
+	ts.tasks <- task
+
 }
 
 // Get a task by id
@@ -249,22 +261,41 @@ func (ts *taskServer) deleteTaskHandler(c *gin.Context) {
 }
 
 func setupServer() (*taskServer, error) {
+
 	router := gin.Default()
 	server, err := NewTaskServer()
 	if err != nil {
 		return nil, err
 	}
-
 	accounts := gin.Accounts{"admin": "secret"}
 
 	router.POST("/task", server.createTaskHandler)
 	router.GET("/task", server.getAllTasksHandler)
 	router.GET("/task/:id", server.getTaskHandler)
 	router.DELETE("/task", gin.BasicAuth(accounts), server.deleteAllTasksHandler)
-	router.DELETE("/task", gin.BasicAuth(accounts), server.deleteAllTasksHandler)
 	router.DELETE("/task/:id", gin.BasicAuth(accounts), server.deleteTaskHandler)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	const numWorkers = 3
+	server.tasks = make(chan RequestTask, 10)
+	var wg sync.WaitGroup
+
+	for i := 1; i <= numWorkers; i++ {
+		wg.Add(1)
+		go server.taskWorker(i, server.tasks, &wg)
+	}
+
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+		<-sigChan
+
+		close(server.tasks)
+
+		wg.Wait()
+		os.Exit(0)
+	}()
 
 	server.router = router
 	return server, nil
@@ -278,7 +309,6 @@ func setupServer() (*taskServer, error) {
 func main() {
 	server, err := setupServer()
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
 	defer server.store.CloseDatabasePool()
