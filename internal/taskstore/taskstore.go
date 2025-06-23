@@ -108,8 +108,10 @@ func (ts *TaskStore) GetTask(id int64) (task Task, err error) {
 		return Task{}, err
 	}
 	task.ResponseHeaders = make(map[string]string)
-	if err := json.Unmarshal(responseHeadersJSON, &task.ResponseHeaders); err != nil {
-		return Task{}, err
+	if responseHeadersJSON != nil {
+		if err := json.Unmarshal(responseHeadersJSON, &task.ResponseHeaders); err != nil {
+			return Task{}, err
+		}
 	}
 	return task, nil
 }

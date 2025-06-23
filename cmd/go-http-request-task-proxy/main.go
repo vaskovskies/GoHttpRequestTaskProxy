@@ -130,10 +130,9 @@ type RequestTask struct {
 	RequestBody RequestBody
 }
 
-func (ts *taskServer) taskWorker(id int, tasks <-chan RequestTask) {
+func (ts *taskServer) taskWorker(tasks <-chan RequestTask) {
 	defer ts.wg.Done()
 	for task := range tasks {
-		//log.Printf("Worker %d processing task %d", id, task.Id)
 		var req *http.Request
 		var reqBodyBuf io.Reader = http.NoBody
 		if task.RequestBody.Body != "" {
@@ -210,10 +209,15 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"Id": id})
 	task := RequestTask{Id: id, RequestBody: rt}
-	ts.tasks <- task
+	select {
+	case ts.tasks <- task:
+		c.JSON(http.StatusOK, gin.H{"Id": id})
+	default:
+		errorMessage := "task queue is full"
+		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, -1, time.Now())
+		c.JSON(http.StatusServiceUnavailable, gin.H{"Id": id})
+	}
 
 }
 
@@ -292,7 +296,7 @@ func setupServer() (*taskServer, error) {
 
 	for i := 1; i <= numWorkers; i++ {
 		server.wg.Add(1)
-		go server.taskWorker(i, server.tasks)
+		go server.taskWorker(server.tasks)
 	}
 
 	return server, nil
@@ -316,7 +320,7 @@ func main() {
 		}
 	}()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 0*time.Second)
 	defer cancel()
 
 	quit := make(chan os.Signal, 1)
@@ -325,18 +329,19 @@ func main() {
 	<-quit
 	log.Println("Shutdown Server ...")
 
+	// catching ctx.Done(). timeout of 5 seconds.
 	if err := server.srv.Shutdown(ctx); err != nil {
 		log.Println("Server Shutdown:", err)
 	}
+
+	<-ctx.Done()
+	log.Println("timeout of 5 seconds.")
+	log.Println("Server exiting")
 
 	close(server.tasks)
 
 	// Wait for all workers to finish
 	server.wg.Wait()
 	log.Println("All workers have exited.")
-	// catching ctx.Done(). timeout of 5 seconds.
-	<-ctx.Done()
-	log.Println("timeout of 5 seconds.")
-	log.Println("Server exiting")
 
 }
