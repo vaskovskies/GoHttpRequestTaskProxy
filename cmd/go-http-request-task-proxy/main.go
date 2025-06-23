@@ -3,8 +3,10 @@ package main
 import (
 	"GoHttpRequestTaskProxy/internal/taskstore"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,6 +26,8 @@ type taskServer struct {
 	store  *taskstore.TaskStore
 	router *gin.Engine
 	tasks  chan RequestTask
+	wg     sync.WaitGroup
+	srv    http.Server
 }
 
 func NewTaskServer() (*taskServer, error) {
@@ -126,8 +130,8 @@ type RequestTask struct {
 	RequestBody RequestBody
 }
 
-func (ts *taskServer) taskWorker(id int, tasks <-chan RequestTask, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (ts *taskServer) taskWorker(id int, tasks <-chan RequestTask) {
+	defer ts.wg.Done()
 	for task := range tasks {
 		fmt.Printf("Worker %d processing task %d", id, task.Id)
 		var req *http.Request
@@ -277,27 +281,20 @@ func setupServer() (*taskServer, error) {
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	const numWorkers = 3
-	server.tasks = make(chan RequestTask, 10)
-	var wg sync.WaitGroup
-
-	for i := 1; i <= numWorkers; i++ {
-		wg.Add(1)
-		go server.taskWorker(i, server.tasks, &wg)
+	server.router = router
+	server.srv = http.Server{
+		Addr:    ":8080",
+		Handler: router.Handler(),
 	}
 
-	go func() {
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-		<-sigChan
+	const numWorkers = 3
+	server.tasks = make(chan RequestTask, 10)
 
-		close(server.tasks)
+	for i := 1; i <= numWorkers; i++ {
+		server.wg.Add(1)
+		go server.taskWorker(i, server.tasks)
+	}
 
-		wg.Wait()
-		os.Exit(0)
-	}()
-
-	server.router = router
 	return server, nil
 }
 
@@ -311,7 +308,35 @@ func main() {
 	if err != nil {
 		return
 	}
-	defer server.store.CloseDatabasePool()
 
-	server.router.Run(":8080")
+	go func() {
+		// service connections
+		if err := server.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	quit := make(chan os.Signal, 1)
+
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutdown Server ...")
+
+	if err := server.srv.Shutdown(ctx); err != nil {
+		log.Println("Server Shutdown:", err)
+	}
+
+	close(server.tasks)
+
+	// Wait for all workers to finish
+	server.wg.Wait()
+	log.Println("All workers have exited.")
+	// catching ctx.Done(). timeout of 5 seconds.
+	<-ctx.Done()
+	log.Println("timeout of 5 seconds.")
+	log.Println("Server exiting")
+
 }
