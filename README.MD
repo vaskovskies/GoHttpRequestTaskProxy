@@ -73,6 +73,7 @@ You can also use the scripts/win_runTests.ps1 out of the project root folder to 
 - [X] Add basic get request unit tests
 - [X] Add basic delete request parametrization & unit tests
 - [ ] Implement workers
+- [ ] Fix unit tests
 
 # Issues
 

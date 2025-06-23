@@ -117,9 +117,9 @@ type RequestBody struct {
 }
 
 type RequestTask struct {
-	id                int
-	requestBody       RequestBody
-	scheduledStatTime time.Time
+	id                 int
+	requestBody        RequestBody
+	scheduledStartTime time.Time
 }
 
 // Create a task
