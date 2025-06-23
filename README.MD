@@ -71,11 +71,11 @@ You can also use the scripts/win_runTests.ps1 out of the project root folder to 
 - [X] Create OpenAPI schema
 - [X] Add basic get request parameterization 
 - [X] Add basic get request unit tests
-- [ ] Add delete request parametrization
+- [X] Add basic delete request parametrization
 
 # Issues
 
 - In the tasks, the body is displayed incorrectly on get request, with the escape characters displayed as their escape sequence (\n, \). This is related to ginContext.JSON(). Relevant stackoverflow issue: https://stackoverflow.com/questions/73460507/json-response-in-gogin-without-escape-characters (actually this was probably an issue with the server i was using to test this with)
 - There are no unit tests for: if the scheduledStartTime and the scheduledEndTime are correct, if the in-progress task even exists (if the task is not done).
 - Can't run test database docker and server database docker at the same time (they use the same ports)
-- The ability to query the get /task endpoint with startDate greater or less than is unimplemented. Its implemention is made difficult as gin only supports "=" parameters. Technically it would be possible to implement "=<" "=>" operators by parsing them quite easily. Although "<" and ">" operators would requiring parsing the whole request url (given that the extra characters don't fail gin's parser, that would mean I would have to make my own parser for all parameters). 
+- The ability to query the get /task endpoint with startDate greater or less than is unimplemented. Its implemention is made difficult as gin only supports "=" parameters. Technically it would be possible to implement "=<" "=>" operators by parsing them quite easily. Although "<" and ">" operators would requiring parsing the whole request url (given that the extra characters don't fail gin's parser, that would mean I would have to make my own parser for all parameters).

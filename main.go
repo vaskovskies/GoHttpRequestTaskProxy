@@ -29,22 +29,13 @@ func NewTaskServer() (*taskServer, error) {
 	return &taskServer{store: store}, nil
 }
 
-// Get all tasks
-// @Summary Get all tasks
-// @Schemes
-// @Description A JSON array of tasks
-// @Accept json
-// @Produce json
-// @Success 200 {array} taskstore.Task
-// @Failure 500
-// @Router /task/ [get]
-func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
-	//parameter checking
+func processTaskParameters(c *gin.Context) (string, *int, error) {
+
 	status := c.Query("status")
-	if status != "done" && status != "in-progress" && status != "error" && status != "" {
-		c.String(http.StatusBadRequest, "error: status can only be done, in-progress, error or empty string")
-		return
+	if status != taskstore.StatusDone && status != taskstore.StatusInProgress && status != taskstore.StatusError && status != "" {
+		return "", nil, fmt.Errorf("error: status can only be done, in-progress, error or empty string")
 	}
+
 	var httpStatusCode *int
 	httpStatusCodeString := c.Query("httpStatusCode")
 	if httpStatusCodeString == "" {
@@ -53,9 +44,31 @@ func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 		ret, err := strconv.Atoi(httpStatusCodeString)
 		httpStatusCode = &ret
 		if err != nil {
-			c.String(http.StatusBadRequest, err.Error())
-			return
+			return status, nil, err
 		}
+	}
+
+	return status, httpStatusCode, nil
+}
+
+// Get all tasks
+// @Summary Get all tasks
+// @Schemes
+// @Description A JSON array of tasks
+// @Accept json
+// @Produce json
+// @Param status query string false "Status"
+// @Param httpStatusCode query int false "HTTP Status Code"
+// @Success 200 {array} taskstore.Task
+// @Failure 500
+// @Router /task/ [get]
+func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
+	//parameter checking
+	status, httpStatusCode, err := processTaskParameters(c)
+
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
 	}
 
 	allTasks, err := ts.store.GetAllTasks(status, httpStatusCode)
@@ -72,11 +85,21 @@ func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 // @Description Deletes all tasks on the server. Requires authorization.
 // @Accept json
 // @Produce json
+// @Param status query string false "Status"
+// @Param httpStatusCode query int false "HTTP Status Code"
 // @Success 200
 // @Router /task/ [delete]
 // @security BasicAuth
 func (ts *taskServer) deleteAllTasksHandler(c *gin.Context) {
-	err := ts.store.DeleteAllTasks()
+
+	status, httpStatusCode, err := processTaskParameters(c)
+
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = ts.store.DeleteAllTasks(status, httpStatusCode)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -111,10 +134,10 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	}
 
 	scheduledStartTime := time.Now()
-	id, err := ts.store.CreateTask("in-progress", 202, make(map[string]string), 0, scheduledStartTime)
+	id, err := ts.store.CreateTask(taskstore.StatusInProgress, 202, make(map[string]string), 0, scheduledStartTime)
 
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
+		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
 		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
@@ -129,7 +152,7 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	}
 
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
+		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
 		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
@@ -143,7 +166,7 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	headers := make(map[string]string)
 
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
+		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
 		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
@@ -158,13 +181,13 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	defer resp.Body.Close()
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		ts.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
+		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
 		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
 	defer resp.Body.Close()
 
-	ts.store.ChangeTask(id, "done", resp.StatusCode, headers, string(bodyBytes), resp.ContentLength, scheduledStartTime, time.Now())
+	ts.store.ChangeTask(id, taskstore.StatusDone, resp.StatusCode, headers, string(bodyBytes), resp.ContentLength, scheduledStartTime, time.Now())
 	c.JSON(http.StatusOK, gin.H{"Id": id})
 }
 
@@ -230,6 +253,7 @@ func setupServer() (*taskServer, error) {
 	router.GET("/task/", server.getAllTasksHandler)
 	router.GET("/task/:id", server.getTaskHandler)
 	router.DELETE("/task/", gin.BasicAuth(accounts), server.deleteAllTasksHandler)
+	router.DELETE("/task", gin.BasicAuth(accounts), server.deleteAllTasksHandler)
 	router.DELETE("/task/:id", gin.BasicAuth(accounts), server.deleteTaskHandler)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

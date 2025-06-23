@@ -314,6 +314,80 @@ func TestGetRequestParametrization(t *testing.T) {
 	}
 }
 
+func TestDeleteRequestParametrization(t *testing.T) {
+	err := recreateDb()
+	if err != nil {
+		t.Logf("Couldn't clean database. Is the enviroment variable set correctly? Is the database test container on?")
+		t.Fail()
+		return
+	}
+	server, err := setupServer()
+	if err != nil {
+		t.Logf("Couldn't set up test server. Is the enviroment variable set correctly? Is the database test container on?")
+		t.Fail()
+		return
+	}
+
+	//test 1: test bad requests
+
+	//invalid status
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("DELETE", "/task?status=NOTVALID", nil)
+	req.SetBasicAuth(username, password)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, 400, w.Code)
+	//invalid httpStatusCode
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/task?httpStatusCode=NaN", nil)
+	req.SetBasicAuth(username, password)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, 400, w.Code)
+
+	//test 2: test if the parametrization works correctly
+
+	//create fake test tasks
+	server.store.CreateTask("done", 500, make(map[string]string), 0, time.Now())
+	server.store.CreateTask("done", 200, make(map[string]string), 0, time.Now())
+	server.store.CreateTask("in-progress", 202, make(map[string]string), 0, time.Now())
+	server.store.CreateTask("error", 500, make(map[string]string), 0, time.Now())
+
+	//send request for all tasks with statusCode 500 and status done
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/task?httpStatusCode=500&status=done", nil)
+	req.SetBasicAuth(username, password)
+	server.router.ServeHTTP(w, req)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/task?httpStatusCode=500&status=done", nil)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, w.Body.String(), "null")
+
+	//send request for all tasks with status done
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/task?status=done", nil)
+	req.SetBasicAuth(username, password)
+	server.router.ServeHTTP(w, req)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/task?status=done", nil)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, w.Body.String(), "null")
+
+	//send request for all tasks with httpStatusCode 202
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/task?httpStatusCode=202", nil)
+	req.SetBasicAuth(username, password)
+	server.router.ServeHTTP(w, req)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/task?httpStatusCode=202", nil)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, w.Body.String(), "null")
+}
+
+var username = "admin"
+var password = "secret"
+
 func TestDeleteRoutes(t *testing.T) {
 	err := recreateDb()
 	if err != nil {
@@ -356,9 +430,6 @@ func TestDeleteRoutes(t *testing.T) {
 	assert.Equal(t, 401, w.Code)
 
 	//test 2: check for bad request
-
-	username := "admin"
-	password := "secret"
 
 	w = httptest.NewRecorder()
 

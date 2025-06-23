@@ -25,6 +25,20 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "summary": "Get all tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "HTTP Status Code",
+                        "name": "httpStatusCode",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -80,6 +94,20 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "summary": "Delete all tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "HTTP Status Code",
+                        "name": "httpStatusCode",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -181,7 +209,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "headers": {
-                    "description": "Json array containing the headers of the HTTP response",
+                    "description": "Json array containing the headers of the HTTP response (optional)",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"

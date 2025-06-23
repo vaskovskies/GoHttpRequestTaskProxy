@@ -27,7 +27,7 @@ definitions:
       headers:
         additionalProperties:
           type: string
-        description: Json array containing the headers of the HTTP response
+        description: Json array containing the headers of the HTTP response (optional)
         type: object
       httpStatusCode:
         description: The httpStatusCode of the HTTP response or Internal Server Error
@@ -63,6 +63,15 @@ paths:
       consumes:
       - application/json
       description: Deletes all tasks on the server. Requires authorization.
+      parameters:
+      - description: Status
+        in: query
+        name: status
+        type: string
+      - description: HTTP Status Code
+        in: query
+        name: httpStatusCode
+        type: integer
       produces:
       - application/json
       responses:
@@ -75,6 +84,15 @@ paths:
       consumes:
       - application/json
       description: A JSON array of tasks
+      parameters:
+      - description: Status
+        in: query
+        name: status
+        type: string
+      - description: HTTP Status Code
+        in: query
+        name: httpStatusCode
+        type: integer
       produces:
       - application/json
       responses:
