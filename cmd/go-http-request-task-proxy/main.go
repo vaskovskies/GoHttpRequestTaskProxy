@@ -220,7 +220,6 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 
 	if err != nil {
 		errorMessage := err.Error()
-		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), time.Now())
 		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
