@@ -72,6 +72,8 @@ You can also use the scripts/win_runTests.ps1 out of the project root folder to 
 - [X] Add basic get request parameterization 
 - [X] Add basic get request unit tests
 - [X] Add basic delete request parametrization & unit tests
+- [X] Implement workers
+- [ ] Fix unit tests
 
 # Issues
 
@@ -79,3 +81,4 @@ You can also use the scripts/win_runTests.ps1 out of the project root folder to 
 - There are no unit tests for: if the scheduledStartTime and the scheduledEndTime are correct, if the in-progress task even exists (if the task is not done).
 - Can't run test database docker and server database docker at the same time (they use the same ports)
 - The ability to query the get /task endpoint with startDate greater or less than is unimplemented. Its implemention is made difficult as gin only supports "=" parameters. Technically it would be possible to implement "=<" "=>" operators by parsing them quite easily. Although "<" and ">" operators would requiring parsing the whole request url (given that the extra characters don't fail gin's parser, that would mean I would have to make my own parser for all parameters).
+

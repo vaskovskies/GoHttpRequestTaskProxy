@@ -3,10 +3,16 @@ package main
 import (
 	"GoHttpRequestTaskProxy/internal/taskstore"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"sync"
+	"syscall"
 	"time"
 
 	_ "GoHttpRequestTaskProxy/docs"
@@ -19,6 +25,9 @@ import (
 type taskServer struct {
 	store  *taskstore.TaskStore
 	router *gin.Engine
+	tasks  chan RequestTask
+	wg     sync.WaitGroup
+	srv    http.Server
 }
 
 func NewTaskServer() (*taskServer, error) {
@@ -61,7 +70,7 @@ func processTaskParameters(c *gin.Context) (string, *int, error) {
 // @Param httpStatusCode query int false "HTTP Status Code"
 // @Success 200 {array} taskstore.Task
 // @Failure 500
-// @Router /task/ [get]
+// @Router /task [get]
 func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 	//parameter checking
 	status, httpStatusCode, err := processTaskParameters(c)
@@ -71,7 +80,17 @@ func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 		return
 	}
 
-	allTasks, err := ts.store.GetAllTasks(status, httpStatusCode)
+	if status == "" && httpStatusCode == nil {
+		allTasks, err := ts.store.GetAllTasks()
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		c.JSON(http.StatusOK, allTasks)
+		return
+	}
+
+	allTasks, err := ts.store.GetTasksWithFilter(status, httpStatusCode)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -88,7 +107,7 @@ func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 // @Param status query string false "Status"
 // @Param httpStatusCode query int false "HTTP Status Code"
 // @Success 200
-// @Router /task/ [delete]
+// @Router /task [delete]
 // @security BasicAuth
 func (ts *taskServer) deleteAllTasksHandler(c *gin.Context) {
 
@@ -99,7 +118,12 @@ func (ts *taskServer) deleteAllTasksHandler(c *gin.Context) {
 		return
 	}
 
-	err = ts.store.DeleteAllTasks(status, httpStatusCode)
+	if status == "" && httpStatusCode == nil {
+		ts.store.DeleteAllTasks()
+		c.JSON(http.StatusOK, nil)
+		return
+	}
+	err = ts.store.DeleteTasksWithFilter(status, httpStatusCode)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -107,13 +131,66 @@ func (ts *taskServer) deleteAllTasksHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, nil)
 }
 
-// RequestTask represents the request body for creating a task
+// RequestBody represents the request body for creating a task
 // @Description Request body for creating a task
-type RequestTask struct {
+type RequestBody struct {
 	Method  string            `json:"method"`  // The HTTP method (e.g., GET, POST)
 	Url     string            `json:"url"`     // The URL of the third-party service
 	Headers map[string]string `json:"headers"` // The headers to include in the request
 	Body    string            `json:"body"`    // The body of the request (optional)
+}
+
+type RequestTask struct {
+	Id          int64
+	RequestBody RequestBody
+}
+
+func (ts *taskServer) taskWorker(tasks <-chan RequestTask) {
+	defer ts.wg.Done()
+	for task := range tasks {
+		var req *http.Request
+		var reqBodyBuf io.Reader = http.NoBody
+		if task.RequestBody.Body != "" {
+			reqBodyBuf = bytes.NewBuffer([]byte(task.RequestBody.Body))
+		}
+		req, err := http.NewRequest(task.RequestBody.Method, task.RequestBody.Url, reqBodyBuf)
+		req.Header.Set("Content-Type", "application/json")
+
+		if err != nil {
+			errorMessage := err.Error()
+			ts.store.ChangeTask(task.Id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), time.Now())
+			continue
+		}
+
+		client := &http.Client{
+			Timeout: 5 * time.Second,
+		}
+
+		resp, err := client.Do(req)
+
+		if err != nil {
+			continue
+		}
+
+		headers := make(map[string]string)
+
+		for key, values := range resp.Header {
+			if len(values) > 0 {
+				headers[key] = values[0]
+			}
+		}
+
+		responseBodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			resp.Body.Close()
+			errorMessage := err.Error()
+			ts.store.ChangeTask(task.Id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), time.Now())
+			continue
+		}
+		resp.Body.Close()
+		responseBodyString := string(responseBodyBytes)
+		ts.store.ChangeTask(task.Id, taskstore.StatusDone, resp.StatusCode, headers, &responseBodyString, resp.ContentLength, time.Now())
+	}
 }
 
 // Create a task
@@ -122,73 +199,41 @@ type RequestTask struct {
 // @Description Create a task on the server by providing the third-party serviceurl, method, headers and optionally a body. Returns a json containing the id of the task on success.
 // @Accept json
 // @Produce json
-// @Param request body RequestTask true "Task request body"
+// @Param request body RequestBody true "Task request body"
 // @Success 200
-// @Router /task/ [post]
+// @Router /task [post]
 func (ts *taskServer) createTaskHandler(c *gin.Context) {
 
-	var rt RequestTask
+	var rt RequestBody
 	if err := c.ShouldBindJSON(&rt); err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 
+	requestBodyBytes, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "couldn't read request body")
+		return
+	}
 	scheduledStartTime := time.Now()
-	id, err := ts.store.CreateTask(taskstore.StatusInProgress, 202, make(map[string]string), 0, scheduledStartTime)
+	id, err := ts.store.CreateTask(taskstore.StatusInProgress, 202, make(map[string]string), string(requestBodyBytes), 0, scheduledStartTime)
 
 	if err != nil {
-		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
+		errorMessage := err.Error()
+		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), time.Now())
 		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
-
-	var req *http.Request
-
-	if rt.Method == "GET" {
-		req, err = http.NewRequest("GET", rt.Url, nil)
-	} else {
-		req, err = http.NewRequest(rt.Method, rt.Url, bytes.NewBuffer([]byte(rt.Body)))
-		req.Header.Set("Content-Type", "application/json")
+	task := RequestTask{Id: id, RequestBody: rt}
+	select {
+	case ts.tasks <- task:
+		c.JSON(http.StatusOK, gin.H{"Id": id})
+	default:
+		errorMessage := "task queue is full"
+		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, -1, time.Now())
+		c.JSON(http.StatusServiceUnavailable, gin.H{"Id": id})
 	}
 
-	if err != nil {
-		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
-		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
-		return
-	}
-
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	resp, err := client.Do(req)
-
-	headers := make(map[string]string)
-
-	if err != nil {
-		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
-		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
-		return
-	}
-
-	for key, values := range resp.Header {
-
-		if len(values) > 0 {
-			headers[key] = values[0]
-		}
-	}
-
-	defer resp.Body.Close()
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), err.Error(), int64(len(err.Error())), scheduledStartTime, time.Now())
-		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
-		return
-	}
-	defer resp.Body.Close()
-
-	ts.store.ChangeTask(id, taskstore.StatusDone, resp.StatusCode, headers, string(bodyBytes), resp.ContentLength, scheduledStartTime, time.Now())
-	c.JSON(http.StatusOK, gin.H{"Id": id})
 }
 
 // Get a task by id
@@ -239,26 +284,36 @@ func (ts *taskServer) deleteTaskHandler(c *gin.Context) {
 }
 
 func setupServer() (*taskServer, error) {
+
 	router := gin.Default()
 	server, err := NewTaskServer()
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
-
 	accounts := gin.Accounts{"admin": "secret"}
 
-	router.POST("/task/", server.createTaskHandler)
+	router.POST("/task", server.createTaskHandler)
 	router.GET("/task", server.getAllTasksHandler)
-	router.GET("/task/", server.getAllTasksHandler)
 	router.GET("/task/:id", server.getTaskHandler)
-	router.DELETE("/task/", gin.BasicAuth(accounts), server.deleteAllTasksHandler)
 	router.DELETE("/task", gin.BasicAuth(accounts), server.deleteAllTasksHandler)
 	router.DELETE("/task/:id", gin.BasicAuth(accounts), server.deleteTaskHandler)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	server.router = router
+	server.srv = http.Server{
+		Addr:    ":8080",
+		Handler: router.Handler(),
+	}
+
+	const numWorkers = 3
+	server.tasks = make(chan RequestTask, 10)
+
+	for i := 1; i <= numWorkers; i++ {
+		server.wg.Add(1)
+		go server.taskWorker(server.tasks)
+	}
+
 	return server, nil
 }
 
@@ -270,10 +325,38 @@ func setupServer() (*taskServer, error) {
 func main() {
 	server, err := setupServer()
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
-	defer server.store.CloseDatabasePool()
 
-	server.router.Run(":8080")
+	go func() {
+		// service connections
+		if err := server.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	quit := make(chan os.Signal, 1)
+
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutdown Server ...")
+
+	// catching ctx.Done(). timeout of 5 seconds.
+	if err := server.srv.Shutdown(ctx); err != nil {
+		log.Println("Server Shutdown:", err)
+	}
+
+	<-ctx.Done()
+	log.Println("timeout of 5 seconds.")
+	log.Println("Server exiting")
+
+	close(server.tasks)
+
+	// Wait for all workers to finish
+	server.wg.Wait()
+	log.Println("All workers have exited.")
+
 }
