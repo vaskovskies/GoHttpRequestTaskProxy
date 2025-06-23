@@ -141,7 +141,7 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 
 	requestBodyBytes, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "couldn't reard request body")
+		c.String(http.StatusInternalServerError, "couldn't read request body")
 		return
 	}
 	scheduledStartTime := time.Now()
