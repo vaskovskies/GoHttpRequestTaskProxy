@@ -158,7 +158,10 @@ func (ts *taskServer) taskWorker(tasks <-chan RequestTask) {
 
 		if err != nil {
 			errorMessage := err.Error()
-			ts.store.ChangeTask(task.Id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), time.Now())
+			err := ts.store.ChangeTask(task.Id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), time.Now())
+			if err != nil {
+				log.Println("couldn't change task: ", task.Id)
+			}
 			continue
 		}
 
@@ -184,12 +187,18 @@ func (ts *taskServer) taskWorker(tasks <-chan RequestTask) {
 		if err != nil {
 			resp.Body.Close()
 			errorMessage := err.Error()
-			ts.store.ChangeTask(task.Id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), time.Now())
+			err := ts.store.ChangeTask(task.Id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), time.Now())
+			if err != nil {
+				log.Println("couldn't change task: ", task.Id)
+			}
 			continue
 		}
 		resp.Body.Close()
 		responseBodyString := string(responseBodyBytes)
-		ts.store.ChangeTask(task.Id, taskstore.StatusDone, resp.StatusCode, headers, &responseBodyString, resp.ContentLength, time.Now())
+		err = ts.store.ChangeTask(task.Id, taskstore.StatusDone, resp.StatusCode, headers, &responseBodyString, resp.ContentLength, time.Now())
+		if err != nil {
+			log.Println("couldn't change task: ", task.Id)
+		}
 	}
 }
 
@@ -219,7 +228,6 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 	id, err := ts.store.CreateTask(taskstore.StatusInProgress, 202, make(map[string]string), string(requestBodyBytes), 0, scheduledStartTime)
 
 	if err != nil {
-		errorMessage := err.Error()
 		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
 		return
 	}
@@ -229,7 +237,11 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"Id": id})
 	default:
 		errorMessage := "task queue is full"
-		ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, -1, time.Now())
+		err := ts.store.ChangeTask(id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, -1, time.Now())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
+			return
+		}
 		c.JSON(http.StatusServiceUnavailable, gin.H{"Id": id})
 	}
 
