@@ -85,11 +85,21 @@ func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 // @Description Deletes all tasks on the server. Requires authorization.
 // @Accept json
 // @Produce json
+// @Param status query string false "Status"
+// @Param httpStatusCode query int false "HTTP Status Code"
 // @Success 200
 // @Router /task/ [delete]
 // @security BasicAuth
 func (ts *taskServer) deleteAllTasksHandler(c *gin.Context) {
-	err := ts.store.DeleteAllTasks()
+
+	status, httpStatusCode, err := processTaskParameters(c)
+
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = ts.store.DeleteAllTasks(status, httpStatusCode)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return

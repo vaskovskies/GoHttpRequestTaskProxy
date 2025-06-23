@@ -138,14 +138,31 @@ func (ts *TaskStore) DeleteTask(id int64) error {
 }
 
 // DeleteAllTasks deletes all tasks in the store.
-func (ts *TaskStore) DeleteAllTasks() error {
+func (ts *TaskStore) DeleteAllTasks(status string, httpStatusCode *int) error {
 	ts.Lock()
 	defer ts.Unlock()
 
-	_, err := ts.dbPool.Exec(context.Background(), "TRUNCATE TABLE tasks")
+	if status == "" && httpStatusCode == nil {
+		_, err := ts.dbPool.Exec(context.Background(), "TRUNCATE TABLE tasks")
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+	} else {
+		queryBuilder := squirrel.Delete("tasks")
+		if status != "" {
+			queryBuilder = queryBuilder.Where("status = ?", status)
+		}
+		if httpStatusCode != nil {
+			queryBuilder = queryBuilder.Where("http_status_code = ?", *httpStatusCode)
+		}
+		queryBuilder = queryBuilder.PlaceholderFormat(squirrel.Dollar)
+		query, args, err := queryBuilder.ToSql()
+		if err != nil {
+			return err
+		}
+		ts.dbPool.Exec(context.Background(), query, args...)
+
 	}
 
 	return nil

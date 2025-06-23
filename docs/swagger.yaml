@@ -63,6 +63,15 @@ paths:
       consumes:
       - application/json
       description: Deletes all tasks on the server. Requires authorization.
+      parameters:
+      - description: Status
+        in: query
+        name: status
+        type: string
+      - description: HTTP Status Code
+        in: query
+        name: httpStatusCode
+        type: integer
       produces:
       - application/json
       responses:

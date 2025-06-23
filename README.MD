@@ -71,7 +71,7 @@ You can also use the scripts/win_runTests.ps1 out of the project root folder to 
 - [X] Create OpenAPI schema
 - [X] Add basic get request parameterization 
 - [X] Add basic get request unit tests
-- [ ] Add delete request parametrization
+- [X] Add basic delete request parametrization
 
 # Issues
 
