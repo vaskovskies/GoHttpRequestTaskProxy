@@ -63,7 +63,7 @@ func processTaskParameters(c *gin.Context) (string, *int, error) {
 // Get all tasks
 // @Summary Get all tasks
 // @Schemes
-// @Description A JSON array of tasks
+// @Description Returns a JSON array of tasks. Can be supplied parameters status and httpStatusCode to select tasks with those parameters.
 // @Accept json
 // @Produce json
 // @Param status query string false "Status"
@@ -101,7 +101,7 @@ func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 // Delete all tasks
 // @Summary Delete all tasks
 // @Schemes
-// @Description Deletes all tasks on the server. Requires authorization.
+// @Description Deletes all tasks on the server. Requires authorization. Can be supplied parameters status and httpStatusCode to delete tasks with those parameters.
 // @Accept json
 // @Produce json
 // @Param status query string false "Status"

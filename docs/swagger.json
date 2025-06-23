@@ -11,7 +11,7 @@
     "paths": {
         "/task": {
             "get": {
-                "description": "A JSON array of tasks",
+                "description": "Returns a JSON array of tasks. Can be supplied parameters status and httpStatusCode to select tasks with those parameters.",
                 "consumes": [
                     "application/json"
                 ],
@@ -80,7 +80,7 @@
                         "BasicAuth": []
                     }
                 ],
-                "description": "Deletes all tasks on the server. Requires authorization.",
+                "description": "Deletes all tasks on the server. Requires authorization. Can be supplied parameters status and httpStatusCode to delete tasks with those parameters.",
                 "consumes": [
                     "application/json"
                 ],
