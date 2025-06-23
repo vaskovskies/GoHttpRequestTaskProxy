@@ -140,8 +140,20 @@ func (ts *TaskStore) DeleteTask(id int64) error {
 	return nil
 }
 
-// DeleteAllTasks deletes all tasks in the store.
-func (ts *TaskStore) DeleteAllTasks(status string, httpStatusCode *int) error {
+// DeleteAllTasks deletes all tasks in the store
+func (ts *TaskStore) DeleteAllTasks() error {
+
+	_, err := ts.dbPool.Exec(context.Background(), "TRUNCATE TABLE tasks")
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteTasksWithFilter deletes all tasks in the store with given status and httpStatusCode.
+func (ts *TaskStore) DeleteTasksWithFilter(status string, httpStatusCode *int) error {
 
 	if status == "" && httpStatusCode == nil {
 		_, err := ts.dbPool.Exec(context.Background(), "TRUNCATE TABLE tasks")
@@ -170,7 +182,42 @@ func (ts *TaskStore) DeleteAllTasks(status string, httpStatusCode *int) error {
 }
 
 // GetAllTasks returns all the tasks in the store, in arbitrary order.
-func (ts *TaskStore) GetAllTasks(status string, httpStatusCode *int) ([]Task, error) {
+func (ts *TaskStore) GetAllTasks() ([]Task, error) {
+	var allTasks []Task
+	rows, err := ts.dbPool.Query(context.Background(),
+		"SELECT id,status,http_status_code,request_headers,response_headers,request_body,response_body,length,scheduled_start_time,scheduled_end_time FROM tasks")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var task Task
+
+		var requestHeadersJSON []byte
+		var responseHeadersJSON []byte
+
+		if err := rows.Scan(&task.Id, &task.Status, &task.HttpStatusCode, &requestHeadersJSON, &responseHeadersJSON, &task.RequestBody, &task.ResponseBody, &task.Length, &task.ScheduledStartTime, &task.ScheduledEndTime); err != nil {
+			return nil, err
+		}
+		task.RequestHeaders = make(map[string]string)
+		if err := json.Unmarshal(requestHeadersJSON, &task.RequestHeaders); err != nil {
+			return make([]Task, 0), err
+		}
+		task.ResponseHeaders = make(map[string]string)
+		if responseHeadersJSON != nil {
+			if err := json.Unmarshal(responseHeadersJSON, &task.ResponseHeaders); err != nil {
+				return make([]Task, 0), err
+			}
+		}
+		allTasks = append(allTasks, task)
+	}
+
+	return allTasks, nil
+}
+
+// GetTasksWithFilter returns tasks with the following status and/or httpStatusCode
+func (ts *TaskStore) GetTasksWithFilter(status string, httpStatusCode *int) ([]Task, error) {
 
 	//build sql string
 	queryBuilder := squirrel.Select("id,status,http_status_code,request_headers,response_headers,request_body,response_body,length,scheduled_start_time,scheduled_end_time").From("tasks")

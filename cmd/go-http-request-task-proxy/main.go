@@ -80,7 +80,17 @@ func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 		return
 	}
 
-	allTasks, err := ts.store.GetAllTasks(status, httpStatusCode)
+	if status == "" && httpStatusCode == nil {
+		allTasks, err := ts.store.GetAllTasks()
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		c.JSON(http.StatusOK, allTasks)
+		return
+	}
+
+	allTasks, err := ts.store.GetTasksWithFilter(status, httpStatusCode)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -108,7 +118,12 @@ func (ts *taskServer) deleteAllTasksHandler(c *gin.Context) {
 		return
 	}
 
-	err = ts.store.DeleteAllTasks(status, httpStatusCode)
+	if status == "" && httpStatusCode == nil {
+		ts.store.DeleteAllTasks()
+		c.JSON(http.StatusOK, nil)
+		return
+	}
+	err = ts.store.DeleteTasksWithFilter(status, httpStatusCode)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return

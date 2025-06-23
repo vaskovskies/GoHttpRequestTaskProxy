@@ -411,7 +411,7 @@ func TestDeleteRoutes(t *testing.T) {
 	server.store.CreateTask("mockTask", 200, make(map[string]string), "dsad", 0, time.Now())
 	server.store.CreateTask("mockTask", 200, make(map[string]string), "dsad", 0, time.Now())
 	server.store.CreateTask("mockTask", 200, make(map[string]string), "dsad", 0, time.Now())
-	ttasks, _ := server.store.GetAllTasks("", nil)
+	ttasks, _ := server.store.GetTasksWithFilter("", nil)
 	t.Log(ttasks[0].Id)
 
 	//test 1: check if the credentials are present
@@ -445,7 +445,7 @@ func TestDeleteRoutes(t *testing.T) {
 	//test 3: test deletion by id
 
 	//check if there are 3 tasks
-	tasks, err := server.store.GetAllTasks("", nil)
+	tasks, err := server.store.GetTasksWithFilter("", nil)
 
 	if err != nil {
 		t.Fatalf("Failed to get tasks: %v", err)
@@ -463,7 +463,7 @@ func TestDeleteRoutes(t *testing.T) {
 
 	assert.Equal(t, 200, w.Code)
 
-	tasks, err = server.store.GetAllTasks("", nil)
+	tasks, err = server.store.GetTasksWithFilter("", nil)
 
 	if err != nil {
 		t.Fatalf("Failed to get tasks: %v", err)
@@ -483,7 +483,7 @@ func TestDeleteRoutes(t *testing.T) {
 
 	assert.Equal(t, 200, w.Code)
 
-	tasks, err = server.store.GetAllTasks("", nil)
+	tasks, err = server.store.GetTasksWithFilter("", nil)
 
 	if err != nil {
 		t.Fatalf("Failed to get tasks: %v", err)
