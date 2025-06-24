@@ -5,7 +5,7 @@ $env:DATABASE_URL = "postgresql://testpostgres:testpostgres@localhost:5432"
 #Set-Location ..
 
 # Run the Go application
-go test
+go test ./cmd/go-http-request-task-proxy
 
 # Optionally, clear the environment variable after running
 Remove-Item Env:DATABASE_URL
