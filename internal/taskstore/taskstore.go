@@ -100,7 +100,6 @@ func (ts *TaskStore) GetTask(id int64) (task Task, err error) {
 		"SELECT id,status,http_status_code,request_headers,response_headers,request_body,response_body,length,scheduled_start_time,scheduled_end_time FROM tasks where id=$1",
 		id).Scan(&task.Id, &task.Status, &task.HttpStatusCode, &requestHeadersJSON, &responseHeadersJSON, &task.RequestBody, &task.ResponseBody, &task.Length, &task.ScheduledStartTime, &task.ScheduledEndTime)
 	if err != nil {
-		println(err.Error())
 		return Task{}, err
 	}
 	task.RequestHeaders = make(map[string]string)

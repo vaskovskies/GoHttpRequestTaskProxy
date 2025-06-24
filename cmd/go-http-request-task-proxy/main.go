@@ -172,6 +172,11 @@ func (ts *taskServer) taskWorker(tasks <-chan RequestTask) {
 		resp, err := client.Do(req)
 
 		if err != nil {
+			errorMessage := err.Error()
+			err := ts.store.ChangeTask(task.Id, taskstore.StatusError, http.StatusInternalServerError, make(map[string]string), &errorMessage, int64(len(err.Error())), time.Now())
+			if err != nil {
+				log.Println("couldn't change task: ", task.Id)
+			}
 			continue
 		}
 
@@ -224,11 +229,16 @@ func (ts *taskServer) createTaskHandler(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "couldn't read request body")
 		return
 	}
+	defer c.Request.Body.Close()
+
 	scheduledStartTime := time.Now()
-	id, err := ts.store.CreateTask(taskstore.StatusInProgress, 202, make(map[string]string), string(requestBodyBytes), 0, scheduledStartTime)
+	if rt.Headers == nil {
+		rt.Headers = make(map[string]string)
+	}
+	id, err := ts.store.CreateTask(taskstore.StatusInProgress, 202, rt.Headers, string(requestBodyBytes), 0, scheduledStartTime)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Id": id})
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 	task := RequestTask{Id: id, RequestBody: rt}
