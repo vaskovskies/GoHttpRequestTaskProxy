@@ -12,11 +12,11 @@ POST   /task/              :  create a task, returns ID
 
 GET    /task/<taskid>      :  returns a single task by ID
 
-GET    /task/              :  returns all tasks. Can be filtered by status and httpStatusCode
+GET    /task/              :  returns all tasks. Can be filtered by status, httpStatusCode, minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime
 
 DELETE /task/<taskid>      :  delete a task by ID
 
-DELETE /task/			   :  delete all tasks. Can be filtered by status and httpStatusCode
+DELETE /task/			   :  delete all tasks. Can be filtered by status, httpStatusCode, minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime
 
 # How to run
 
