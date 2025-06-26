@@ -1,5 +1,5 @@
 # Set the environment variable temporarily
-$env:DATABASE_URL = "postgresql://testpostgres:testpostgres@localhost:5432"
+$env:DATABASE_URL = "postgresql://testpostgres:testpostgres@localhost:2345"
 
 # Change to the parent directory
 #Set-Location ..

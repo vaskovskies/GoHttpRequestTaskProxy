@@ -33,8 +33,9 @@ services:
       POSTGRES_USER: testpostgres
       POSTGRES_DB: testpostgres
     ports:
-      - "5432:5432"
+      - "2345:2345"
     volumes:
       - ../scripts/docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: -p 2345
 volumes:
   pgdata: {}

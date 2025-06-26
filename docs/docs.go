@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/task": {
             "get": {
-                "description": "Returns a JSON array of tasks. Can be supplied parameters status and httpStatusCode to select tasks with those parameters.",
+                "description": "Returns a JSON array of tasks. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to get tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS",
                 "consumes": [
                     "application/json"
                 ],
@@ -37,6 +37,30 @@ const docTemplate = `{
                         "description": "HTTP Status Code",
                         "name": "httpStatusCode",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "name": "minScheduledStartTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "name": "maxScheduledStartTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "name": "minScheduledEndTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "name": "maxScheduledEndTime",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -55,7 +79,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a task on the server by providing the third-party serviceurl, method, headers and optionally a body. Returns a json containing the id of the task on success.",
+                "description": "Create a task on the server by providing the third-party service url, method, headers and a body. Returns a json containing the id of the task on success.",
                 "consumes": [
                     "application/json"
                 ],
@@ -86,7 +110,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Deletes all tasks on the server. Requires authorization. Can be supplied parameters status and httpStatusCode to delete tasks with those parameters.",
+                "description": "Deletes all tasks on the server. Requires authorization. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to delete tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS",
                 "consumes": [
                     "application/json"
                 ],
@@ -105,6 +129,30 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "HTTP Status Code",
                         "name": "httpStatusCode",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "name": "minScheduledStartTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "name": "maxScheduledStartTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "name": "minScheduledEndTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "name": "maxScheduledEndTime",
                         "in": "query"
                     }
                 ],
@@ -216,6 +264,10 @@ const docTemplate = `{
                     "description": "The content length of the HTTP response",
                     "type": "integer"
                 },
+                "requestBody": {
+                    "description": "The body of the HTTP request",
+                    "type": "string"
+                },
                 "requestHeaders": {
                     "description": "Json array containing the headers of the HTTP request (optional)",
                     "type": "object",
@@ -223,8 +275,8 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "request_body": {
-                    "description": "The body of the HTTP request",
+                "responseBody": {
+                    "description": "The body of the HTTP response",
                     "type": "string"
                 },
                 "responseHeaders": {
@@ -233,10 +285,6 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "string"
                     }
-                },
-                "response_body": {
-                    "description": "The body of the HTTP response",
-                    "type": "string"
                 },
                 "scheduledEndTime": {
                     "description": "The time and date at which the task was done processing",

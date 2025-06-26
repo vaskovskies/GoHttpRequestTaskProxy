@@ -31,7 +31,7 @@ definitions:
       length:
         description: The content length of the HTTP response
         type: integer
-      request_body:
+      requestBody:
         description: The body of the HTTP request
         type: string
       requestHeaders:
@@ -39,7 +39,7 @@ definitions:
           type: string
         description: Json array containing the headers of the HTTP request (optional)
         type: object
-      response_body:
+      responseBody:
         description: The body of the HTTP response
         type: string
       responseHeaders:
@@ -70,8 +70,10 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Deletes all tasks on the server. Requires authorization. Can be
-        supplied parameters status and httpStatusCode to delete tasks with those parameters.
+      description: 'Deletes all tasks on the server. Requires authorization. Can be
+        supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime,
+        maxScheduledEndTime, status and httpStatusCode to delete tasks with those
+        parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS'
       parameters:
       - description: Status
         in: query
@@ -81,6 +83,22 @@ paths:
         in: query
         name: httpStatusCode
         type: integer
+      - description: Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ
+        in: query
+        name: minScheduledStartTime
+        type: string
+      - description: Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ
+        in: query
+        name: maxScheduledStartTime
+        type: string
+      - description: Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ
+        in: query
+        name: minScheduledEndTime
+        type: string
+      - description: Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ
+        in: query
+        name: maxScheduledEndTime
+        type: string
       produces:
       - application/json
       responses:
@@ -92,8 +110,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns a JSON array of tasks. Can be supplied parameters status
-        and httpStatusCode to select tasks with those parameters.
+      description: 'Returns a JSON array of tasks. Can be supplied parameters minScheduledStartTime,
+        maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and
+        httpStatusCode to get tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS'
       parameters:
       - description: Status
         in: query
@@ -103,6 +122,22 @@ paths:
         in: query
         name: httpStatusCode
         type: integer
+      - description: Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ
+        in: query
+        name: minScheduledStartTime
+        type: string
+      - description: Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ
+        in: query
+        name: maxScheduledStartTime
+        type: string
+      - description: Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ
+        in: query
+        name: minScheduledEndTime
+        type: string
+      - description: Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ
+        in: query
+        name: maxScheduledEndTime
+        type: string
       produces:
       - application/json
       responses:
@@ -118,9 +153,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a task on the server by providing the third-party serviceurl,
-        method, headers and optionally a body. Returns a json containing the id of
-        the task on success.
+      description: Create a task on the server by providing the third-party service
+        url, method, headers and a body. Returns a json containing the id of the task
+        on success.
       parameters:
       - description: Task request body
         in: body

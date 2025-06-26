@@ -38,11 +38,26 @@ func NewTaskServer() (*taskServer, error) {
 	return &taskServer{store: store}, nil
 }
 
-func processTaskParameters(c *gin.Context) (string, *int, error) {
+func processTimeParameter(s string) (*time.Time, error) {
+	const layout = time.RFC3339
+	var returnTime *time.Time
+	if s == "" {
+		returnTime = nil
+	} else {
+		parsedTime, err := time.Parse(layout, s)
+		if err != nil {
+			return nil, err
+		}
+		returnTime = &parsedTime
+	}
+	return returnTime, nil
+}
+
+func processTaskParameters(c *gin.Context) (string, *int, *time.Time, *time.Time, *time.Time, *time.Time, error) {
 
 	status := c.Query("status")
 	if status != taskstore.StatusDone && status != taskstore.StatusInProgress && status != taskstore.StatusError && status != "" {
-		return "", nil, fmt.Errorf("error: status can only be done, in-progress, error or empty string")
+		return "", nil, nil, nil, nil, nil, fmt.Errorf("error: status can only be done, in-progress, error or empty string")
 	}
 
 	var httpStatusCode *int
@@ -53,34 +68,55 @@ func processTaskParameters(c *gin.Context) (string, *int, error) {
 		ret, err := strconv.Atoi(httpStatusCodeString)
 		httpStatusCode = &ret
 		if err != nil {
-			return status, nil, err
+			return status, nil, nil, nil, nil, nil, err
 		}
 	}
 
-	return status, httpStatusCode, nil
+	min_scheduled_start_time, err := processTimeParameter(c.Query("minScheduledStartTime"))
+	if err != nil {
+		return status, httpStatusCode, nil, nil, nil, nil, err
+	}
+	max_scheduled_start_time, err := processTimeParameter(c.Query("maxScheduledStartTime"))
+	if err != nil {
+		return status, httpStatusCode, min_scheduled_start_time, nil, nil, nil, err
+	}
+	min_scheduled_end_time, err := processTimeParameter(c.Query("minScheduledEndTime"))
+	if err != nil {
+		return status, httpStatusCode, min_scheduled_start_time, max_scheduled_start_time, nil, nil, err
+	}
+	max_scheduled_end_time, err := processTimeParameter(c.Query("maxScheduledEndTime"))
+	if err != nil {
+		return status, httpStatusCode, min_scheduled_start_time, max_scheduled_start_time, min_scheduled_end_time, nil, err
+	}
+
+	return status, httpStatusCode, min_scheduled_start_time, max_scheduled_start_time, min_scheduled_end_time, max_scheduled_end_time, nil
 }
 
 // Get all tasks
 // @Summary Get all tasks
 // @Schemes
-// @Description Returns a JSON array of tasks. Can be supplied parameters status and httpStatusCode to select tasks with those parameters.
+// @Description Returns a JSON array of tasks. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to get tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS
 // @Accept json
 // @Produce json
 // @Param status query string false "Status"
 // @Param httpStatusCode query int false "HTTP Status Code"
+// @Param minScheduledStartTime query string false "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param maxScheduledStartTime query string false "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param minScheduledEndTime query string false "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param maxScheduledEndTime query string false "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ"
 // @Success 200 {array} taskstore.Task
 // @Failure 500
 // @Router /task [get]
 func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 	//parameter checking
-	status, httpStatusCode, err := processTaskParameters(c)
+	status, httpStatusCode, minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, err := processTaskParameters(c)
 
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if status == "" && httpStatusCode == nil {
+	if status == "" && httpStatusCode == nil && minScheduledStartTime == nil && maxScheduledStartTime == nil && minScheduledEndTime == nil && maxScheduledEndTime == nil {
 		allTasks, err := ts.store.GetAllTasks()
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
@@ -90,7 +126,7 @@ func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 		return
 	}
 
-	allTasks, err := ts.store.GetTasksWithFilter(status, httpStatusCode)
+	allTasks, err := ts.store.GetTasksWithFilter(status, httpStatusCode, minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -101,29 +137,33 @@ func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 // Delete all tasks
 // @Summary Delete all tasks
 // @Schemes
-// @Description Deletes all tasks on the server. Requires authorization. Can be supplied parameters status and httpStatusCode to delete tasks with those parameters.
+// @Description Deletes all tasks on the server. Requires authorization. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to delete tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS
 // @Accept json
 // @Produce json
 // @Param status query string false "Status"
 // @Param httpStatusCode query int false "HTTP Status Code"
+// @Param minScheduledStartTime query string false "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param maxScheduledStartTime query string false "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param minScheduledEndTime query string false "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param maxScheduledEndTime query string false "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ"
 // @Success 200
 // @Router /task [delete]
 // @security BasicAuth
 func (ts *taskServer) deleteAllTasksHandler(c *gin.Context) {
 
-	status, httpStatusCode, err := processTaskParameters(c)
+	status, httpStatusCode, minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, err := processTaskParameters(c)
 
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if status == "" && httpStatusCode == nil {
+	if status == "" && httpStatusCode == nil && minScheduledStartTime == nil && maxScheduledStartTime == nil && minScheduledEndTime == nil && maxScheduledEndTime == nil {
 		ts.store.DeleteAllTasks()
 		c.JSON(http.StatusOK, nil)
 		return
 	}
-	err = ts.store.DeleteTasksWithFilter(status, httpStatusCode)
+	err = ts.store.DeleteTasksWithFilter(status, httpStatusCode, minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -210,7 +250,7 @@ func (ts *taskServer) taskWorker(tasks <-chan RequestTask) {
 // Create a task
 // @Summary Create a task
 // @Schemes
-// @Description Create a task on the server by providing the third-party serviceurl, method, headers and optionally a body. Returns a json containing the id of the task on success.
+// @Description Create a task on the server by providing the third-party service url, method, headers and a body. Returns a json containing the id of the task on success.
 // @Accept json
 // @Produce json
 // @Param request body RequestBody true "Task request body"
