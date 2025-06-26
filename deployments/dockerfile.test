@@ -1,0 +1,16 @@
+#use official go golang image
+FROM golang:1.24.4
+
+#set the working directory to /app
+WORKDIR /app
+
+#copy source files
+COPY . .
+
+#download and install the dependencies
+RUN go get -v ./...
+
+EXPOSE 8080
+
+#run the executable
+CMD ["go", "test","./cmd/go-http-request-task-proxy", "-v"]
