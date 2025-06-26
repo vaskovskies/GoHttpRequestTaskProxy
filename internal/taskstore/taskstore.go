@@ -151,31 +151,50 @@ func (ts *TaskStore) DeleteAllTasks() error {
 	return nil
 }
 
-// DeleteTasksWithFilter deletes all tasks in the store with given status and httpStatusCode.
-func (ts *TaskStore) DeleteTasksWithFilter(status string, httpStatusCode *int) error {
+func processParametersIntoStringMaps(status string, httpStatusCode *int, minScheduledStartTime *time.Time, maxScheduledStartTime *time.Time, minScheduledEndTime *time.Time, maxScheduledEndTime *time.Time) (Eq map[string]interface{}, LtOrEq map[string]interface{}, GtOrEq map[string]interface{}) {
 
-	if status == "" && httpStatusCode == nil {
-		_, err := ts.dbPool.Exec(context.Background(), "TRUNCATE TABLE tasks")
+	Eq = make(map[string]interface{})
+	LtOrEq = make(map[string]interface{})
+	GtOrEq = make(map[string]interface{})
 
-		if err != nil {
-			return err
-		}
-	} else {
-		queryBuilder := squirrel.Delete("tasks")
-		if status != "" {
-			queryBuilder = queryBuilder.Where("status = ?", status)
-		}
-		if httpStatusCode != nil {
-			queryBuilder = queryBuilder.Where("http_status_code = ?", *httpStatusCode)
-		}
-		queryBuilder = queryBuilder.PlaceholderFormat(squirrel.Dollar)
-		query, args, err := queryBuilder.ToSql()
-		if err != nil {
-			return err
-		}
-		ts.dbPool.Exec(context.Background(), query, args...)
-
+	if status != "" {
+		Eq["status"] = status
 	}
+	if httpStatusCode != nil {
+		Eq["httpStatusCode"] = httpStatusCode
+	}
+	if minScheduledStartTime != nil {
+		GtOrEq["scheduled_start_time"] = minScheduledStartTime
+	}
+	if minScheduledEndTime != nil {
+		GtOrEq["scheduled_end_time"] = minScheduledEndTime
+	}
+	if maxScheduledStartTime != nil {
+		LtOrEq["scheduled_start_time"] = maxScheduledStartTime
+	}
+	if maxScheduledEndTime != nil {
+		LtOrEq["scheduled_end_time"] = maxScheduledEndTime
+	}
+
+	return Eq, LtOrEq, GtOrEq
+}
+
+// DeleteTasksWithFilter deletes all tasks in the store with given status and httpStatusCode.
+func (ts *TaskStore) DeleteTasksWithFilter(status string, httpStatusCode *int, minScheduledStartTime *time.Time, maxScheduledStartTime *time.Time, minScheduledEndTime *time.Time, maxScheduledEndTime *time.Time) error {
+
+	queryBuilder := squirrel.Delete("tasks")
+	if status != "" {
+		queryBuilder = queryBuilder.Where("status = ?", status)
+	}
+	if httpStatusCode != nil {
+		queryBuilder = queryBuilder.Where("http_status_code = ?", *httpStatusCode)
+	}
+	queryBuilder = queryBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return err
+	}
+	ts.dbPool.Exec(context.Background(), query, args...)
 
 	return nil
 }
@@ -216,7 +235,7 @@ func (ts *TaskStore) GetAllTasks() ([]Task, error) {
 }
 
 // GetTasksWithFilter returns tasks with the following status and/or httpStatusCode
-func (ts *TaskStore) GetTasksWithFilter(status string, httpStatusCode *int) ([]Task, error) {
+func (ts *TaskStore) GetTasksWithFilter(status string, httpStatusCode *int, minScheduledStartTime *time.Time, maxScheduledStartTime *time.Time, minScheduledEndTime *time.Time, maxScheduledEndTime *time.Time) ([]Task, error) {
 
 	//build sql string
 	queryBuilder := squirrel.Select("id,status,http_status_code,request_headers,response_headers,request_body,response_body,length,scheduled_start_time,scheduled_end_time").From("tasks")

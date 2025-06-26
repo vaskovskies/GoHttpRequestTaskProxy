@@ -509,7 +509,7 @@ func TestDeleteRoutes(t *testing.T) {
 	//test 3: test deletion by id
 
 	//check if there are 3 tasks
-	tasks, err := server.store.GetTasksWithFilter("", nil)
+	tasks, err := server.store.GetAllTasks()
 
 	if err != nil {
 		t.Fatalf("Failed to get tasks: %v", err)
@@ -527,7 +527,7 @@ func TestDeleteRoutes(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	tasks, err = server.store.GetTasksWithFilter("", nil)
+	tasks, err = server.store.GetAllTasks()
 
 	if err != nil {
 		t.Fatalf("Failed to get tasks: %v", err)
@@ -547,7 +547,7 @@ func TestDeleteRoutes(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	tasks, err = server.store.GetTasksWithFilter("", nil)
+	tasks, err = server.store.GetAllTasks()
 
 	if err != nil {
 		t.Fatalf("Failed to get tasks: %v", err)
