@@ -210,7 +210,7 @@ func (ts *taskServer) taskWorker(tasks <-chan RequestTask) {
 // Create a task
 // @Summary Create a task
 // @Schemes
-// @Description Create a task on the server by providing the third-party serviceurl, method, headers and optionally a body. Returns a json containing the id of the task on success.
+// @Description Create a task on the server by providing the third-party service url, method, headers and a body. Returns a json containing the id of the task on success.
 // @Accept json
 // @Produce json
 // @Param request body RequestBody true "Task request body"

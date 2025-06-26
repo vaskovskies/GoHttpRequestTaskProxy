@@ -55,7 +55,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a task on the server by providing the third-party serviceurl, method, headers and optionally a body. Returns a json containing the id of the task on success.",
+                "description": "Create a task on the server by providing the third-party service url, method, headers and a body. Returns a json containing the id of the task on success.",
                 "consumes": [
                     "application/json"
                 ],
@@ -216,6 +216,10 @@ const docTemplate = `{
                     "description": "The content length of the HTTP response",
                     "type": "integer"
                 },
+                "requestBody": {
+                    "description": "The body of the HTTP request",
+                    "type": "string"
+                },
                 "requestHeaders": {
                     "description": "Json array containing the headers of the HTTP request (optional)",
                     "type": "object",
@@ -223,8 +227,8 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "request_body": {
-                    "description": "The body of the HTTP request",
+                "responseBody": {
+                    "description": "The body of the HTTP response",
                     "type": "string"
                 },
                 "responseHeaders": {
@@ -233,10 +237,6 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "string"
                     }
-                },
-                "response_body": {
-                    "description": "The body of the HTTP response",
-                    "type": "string"
                 },
                 "scheduledEndTime": {
                     "description": "The time and date at which the task was done processing",

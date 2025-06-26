@@ -19,8 +19,8 @@ type Task struct {
 	HttpStatusCode     int               `json:"httpStatusCode"`     // The httpStatusCode of the HTTP response or Internal Server Error (500) in case of server errors
 	RequestHeaders     map[string]string `json:"requestHeaders"`     // Json array containing the headers of the HTTP request (optional)
 	ResponseHeaders    map[string]string `json:"responseHeaders"`    // Json array containing the headers of the HTTP response
-	RequestBody        string            `json:"request_body"`       // The body of the HTTP request
-	ResponseBody       *string           `json:"response_body"`      // The body of the HTTP response
+	RequestBody        string            `json:"requestBody"`        // The body of the HTTP request
+	ResponseBody       *string           `json:"responseBody"`       // The body of the HTTP response
 	Length             int64             `json:"length"`             // The content length of the HTTP response
 	ScheduledStartTime time.Time         `json:"scheduledStartTime"` // The time and date at which the task was sent to the server for processing
 	ScheduledEndTime   *time.Time        `json:"scheduledEndTime"`   // The time and date at which the task was done processing
