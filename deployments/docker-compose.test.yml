@@ -1,0 +1,24 @@
+services:
+  go-app:
+    container_name: go-app
+    build:
+      context: ..
+      dockerfile: ./deployments/dockerfile.test/
+    environment:
+      DATABASE_URL: "postgresql://testpostgres:testpostgres@go_testdb:2345"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - go_testdb
+  go_testdb:
+      container_name: go_testdb
+      image: postgres:17
+      environment:
+        POSTGRES_PASSWORD: testpostgres
+        POSTGRES_USER: testpostgres
+        POSTGRES_DB: testpostgres
+      ports:
+        - "2345:2345"
+      volumes:
+        - ../scripts/docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
+      command: -p 2345

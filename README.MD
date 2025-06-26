@@ -22,42 +22,41 @@ DELETE /task/			   :  delete all tasks. Can be filtered by status, httpStatusCod
 
 If you want to run this out of the deployment folder:
 
-    docker compose up -d go_db
-    docker compose up -d go-app
+    docker compose up -d
 
 If you want to run the app out of the project root folder:
 
-    docker compose -f deployments/docker-compose.yml up -d go-app
-    docker compose -f deployments/docker-compose.yml up -d go_db
+    docker compose -f deployments/docker-compose.yml up -d
 
-## Running the server locally
+Keep in mind that the application container has to be rebuilt everytime the code base changes.
 
-set enviroment variable "DATABASE_URL" to
+The docker compose deployment consists of:
+- go_app: the server application
+- go_db: the postgres database
 
-    postgresql://postgres:postgres@localhost:5432
-After that, it is possible run it locally with 
-
-    go run main.go
-
-You can use the win_runLocally.ps1 script in main folder to do that for you on Windows.
-
-## Running tests
+# Running tests
 
 <b>Make sure to run the tests inside the test docker container and to set the enviroment variables to the test container.
 Running the tests inside the production container WILL result in test failures and data loss. </b>
 
-The test docker container can be ran out of the deployments folder like this:
-    docker compose up -d go_testdb
+The test postgres docker container can be ran out of the deployments folder like this:
+    docker compose up -d
 
 And out of the project root folder like this:
-    docker compose -f deployments/docker-compose.yml up -d go_testdb
+    docker compose -f deployments/docker-compose.test.yml up --build
 
+The test docker deployment consists of service:
+- go_testapp: the test server application
+- go_testdb: the postgres test database
+
+## Running tests locally
 set enviroment variable "DATABASE_URL" to
 
-    postgresql://testpostgres:testpostgres@localhost:5432
+    postgresql://testpostgres:testpostgres@localhost:2345
+Launch postgres test server with the correct credentials.
 After that, it is possible run it locally with 
 
-    go test
+    go test ./cmd/go-http-request-task-proxy
 You can also use the scripts/win_runTests.ps1 out of the project root folder to set the enviroment variable before running the test.
 
 # Roadmap

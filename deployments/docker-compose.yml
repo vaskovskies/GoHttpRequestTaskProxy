@@ -3,9 +3,8 @@ services:
     container_name: go-app
     build:
       context: ..
-      dockerfile: deployments/dockerfile
+      dockerfile: deployments/dockerfile/
     environment:
-      #DATABASE_URL: "host = go_db user=postgres password=postgres dbname=postgres sslmode=disable"
       DATABASE_URL: "postgresql://postgres:postgres@localhost:5432"
     ports:
       - "8080:8080"
@@ -25,17 +24,5 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ../scripts/docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
-  go_testdb:
-    container_name: go_testdb
-    image: postgres:17
-    environment:
-      POSTGRES_PASSWORD: testpostgres
-      POSTGRES_USER: testpostgres
-      POSTGRES_DB: testpostgres
-    ports:
-      - "2345:2345"
-    volumes:
-      - ../scripts/docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
-    command: -p 2345
 volumes:
   pgdata: {}
