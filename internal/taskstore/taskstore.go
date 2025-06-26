@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -164,7 +163,6 @@ func processParametersIntoStringMaps(status string, httpStatusCode *int, minSche
 	if httpStatusCode != nil {
 		Eq["http_status_code"] = *httpStatusCode
 	}
-	log.Println(squirrel.Eq(Eq))
 	if minScheduledStartTime != nil {
 		GtOrEq["scheduled_start_time"] = *minScheduledStartTime
 	}
@@ -191,9 +189,6 @@ func (ts *TaskStore) DeleteTasksWithFilter(status string, httpStatusCode *int, m
 	queryBuilder = queryBuilder.Where(squirrel.LtOrEq(LtOrEq))
 	queryBuilder = queryBuilder.Where(squirrel.GtOrEq(GtOrEq))
 	query, args, err := queryBuilder.ToSql()
-	log.Println(Eq)
-
-	log.Println(query)
 
 	if err != nil {
 		return err
@@ -249,7 +244,7 @@ func (ts *TaskStore) GetTasksWithFilter(status string, httpStatusCode *int, minS
 	queryBuilder = queryBuilder.Where(squirrel.LtOrEq(LtOrEq))
 	queryBuilder = queryBuilder.Where(squirrel.GtOrEq(GtOrEq))
 	query, args, err := queryBuilder.ToSql()
-	log.Println(query)
+
 	if err != nil {
 		return nil, err
 	}

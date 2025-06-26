@@ -40,25 +40,25 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SS",
+                        "description": "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ",
                         "name": "minScheduledStartTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SS",
+                        "description": "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ",
                         "name": "maxScheduledStartTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SS",
+                        "description": "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ",
                         "name": "minScheduledEndTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SS",
+                        "description": "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ",
                         "name": "maxScheduledEndTime",
                         "in": "query"
                     }
@@ -133,25 +133,25 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SS",
+                        "description": "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ",
                         "name": "minScheduledStartTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SS",
+                        "description": "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ",
                         "name": "maxScheduledStartTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SS",
+                        "description": "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ",
                         "name": "minScheduledEndTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SS",
+                        "description": "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ",
                         "name": "maxScheduledEndTime",
                         "in": "query"
                     }

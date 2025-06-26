@@ -74,10 +74,12 @@ You can also use the scripts/win_runTests.ps1 out of the project root folder to 
 - [X] Add basic delete request parametrization & unit tests
 - [X] Implement workers
 - [X] Fix unit tests
+- [X] Add scheduled_start_time and scheduled_end_time parametrization (by min and max)
+- [X] Add unit tests for scheduled_start_time and scheduled_end_time parametrization
 
-# Issues
+# Issues / TODO
 
 - In the tasks, the body is displayed incorrectly on get request, with the escape characters displayed as their escape sequence (\n, \). This is related to ginContext.JSON(). Relevant stackoverflow issue: https://stackoverflow.com/questions/73460507/json-response-in-gogin-without-escape-characters (actually this was probably an issue with the server i was using to test this with)
-- There are no unit tests for: if the scheduledStartTime and the scheduledEndTime are correct.
-- The ability to query the get /task endpoint with startDate greater or less than is unimplemented. Its implemention is made difficult as gin only supports "=" parameters. Technically it would be possible to implement "=<" "=>" operators by parsing them quite easily. Although "<" and ">" operators would requiring parsing the whole request url (given that the extra characters don't fail gin's parser, that would mean I would have to make my own parser for all parameters).
+- can't query by content length, headers (in url json format?)
+- can't query by times directly by using the equals symbol("="). The database stores times in 2025-06-23 19:14:23.052463 format (YYYY-MM-DD HH:MM:SS.mmmmmm) and golang's default formats only include nanosecond formats. I would probably need to write a format for this myself, preferably one that is inline with the database's format to implement searching for tasks with those times.  
 

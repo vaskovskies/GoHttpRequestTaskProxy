@@ -313,10 +313,18 @@ func TestGetRequestParametrization(t *testing.T) {
 	//test 2: test if the parametrization works correctly
 
 	//create fake test tasks
-	server.store.CreateTask("done", http.StatusInternalServerError, make(map[string]string), "dsad", 0, time.Now())
-	server.store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, time.Now())
-	server.store.CreateTask("in-progress", http.StatusAccepted, make(map[string]string), "dsad", 0, time.Now())
-	server.store.CreateTask("error", http.StatusInternalServerError, make(map[string]string), "dsad", 0, time.Now())
+	Time1, _ := time.Parse(time.RFC3339, "2006-01-02T12:00:00Z")
+	Time2, _ := time.Parse(time.RFC3339, "2008-01-02T16:00:00Z")
+	Time3, _ := time.Parse(time.RFC3339, "2010-01-02T22:00:00Z")
+	Time4, _ := time.Parse(time.RFC3339, "2012-01-02T24:00:00Z")
+	id, _ := server.store.CreateTask("done", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time1)
+	server.store.ChangeTask(id, "done", http.StatusInternalServerError, make(map[string]string), nil, 0, Time1)
+	id, _ = server.store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, Time2)
+	server.store.ChangeTask(id, "done", http.StatusOK, make(map[string]string), nil, 0, Time2)
+	id, _ = server.store.CreateTask("in-progress", http.StatusAccepted, make(map[string]string), "dsad", 0, Time3)
+	server.store.ChangeTask(id, "in-progress", http.StatusAccepted, make(map[string]string), nil, 0, Time3)
+	id, _ = server.store.CreateTask("error", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time4)
+	server.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), nil, 0, Time4)
 
 	//send request for all tasks with statusCode 500
 	w = httptest.NewRecorder()
@@ -369,7 +377,44 @@ func TestGetRequestParametrization(t *testing.T) {
 			return
 		}
 	}
+
+	//find requests within scheduledStartTime Time2 and Time3
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/task?minScheduledStartTime=2008-01-02T16:00:00Z&maxScheduledStartTime=2010-01-02T22:00:00Z", nil)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	err = json.Unmarshal(w.Body.Bytes(), &allTasksResponse)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+		return
+	}
+	for _, task := range allTasksResponse {
+		if task.ScheduledStartTime.Before(Time2) || task.ScheduledStartTime.After(Time3) {
+			t.Error("task query with parameters minScheduledStartTime=2008-01-02T16:00:00Z&maxScheduledStartTime=2010-01-02T22:00:00Z returned tasks outside of the bounds of the query")
+			return
+		}
+	}
+
+	//find requests within scheduledEndTime Time2 and Time3
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/task?minScheduledEndTime=2008-01-02T16:00:00Z&maxScheduledEndTime=2010-01-02T22:00:00Z", nil)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	err = json.Unmarshal(w.Body.Bytes(), &allTasksResponse)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+		return
+	}
+	for _, task := range allTasksResponse {
+		if task.ScheduledEndTime.Before(Time2) || task.ScheduledEndTime.After(Time3) {
+			t.Error("task query with parameters minScheduledEndTime=2008-01-02T16:00:00Z&maxScheduledEndTime=2010-01-02T22:00:00Z returned tasks outside of the bounds of the query")
+			return
+		}
+	}
 }
+
+var username = "admin"
+var password = "secret"
 
 func TestDeleteRequestParametrization(t *testing.T) {
 	err := recreateDb()
@@ -445,10 +490,55 @@ func TestDeleteRequestParametrization(t *testing.T) {
 	server.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, w.Body.String(), "null")
-}
 
-var username = "admin"
-var password = "secret"
+	//delete all tasks before start and end date tests
+	server.store.DeleteAllTasks()
+	//create fake test tasks
+	Time1, _ := time.Parse(time.RFC3339, "2006-01-02T12:00:00Z")
+	Time2, _ := time.Parse(time.RFC3339, "2008-01-02T16:00:00Z")
+	Time3, _ := time.Parse(time.RFC3339, "2010-01-02T22:00:00Z")
+	Time4, _ := time.Parse(time.RFC3339, "2012-01-02T23:00:00Z")
+	id, _ := server.store.CreateTask("done", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time1)
+	server.store.ChangeTask(id, "done", http.StatusInternalServerError, make(map[string]string), nil, 0, Time1)
+	id, _ = server.store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, Time2)
+	server.store.ChangeTask(id, "done", http.StatusOK, make(map[string]string), nil, 0, Time2)
+	id, _ = server.store.CreateTask("in-progress", http.StatusAccepted, make(map[string]string), "dsad", 0, Time3)
+	server.store.ChangeTask(id, "in-progress", http.StatusAccepted, make(map[string]string), nil, 0, Time3)
+	id, _ = server.store.CreateTask("error", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time4)
+	server.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), nil, 0, Time4)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/task?minScheduledStartTime=2008-01-02T16:00:00Z&maxScheduledStartTime=2010-01-02T22:00:00Z", nil)
+	req.SetBasicAuth(username, password)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	allTasks, _ := server.store.GetAllTasks()
+	for _, task := range allTasks {
+		if !(task.ScheduledStartTime.Before(Time2) || task.ScheduledStartTime.After(Time3)) {
+			t.Error("task query with parameters minScheduledStartTime=2008-01-02T16:00:00Z&maxScheduledStartTime=2010-01-02T22:00:00Z returned tasks outside of the bounds of the query")
+			return
+		}
+	}
+
+	//re-add tasks with Time2 and Time3
+	id, _ = server.store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, Time2)
+	server.store.ChangeTask(id, "done", http.StatusOK, make(map[string]string), nil, 0, Time2)
+	id, _ = server.store.CreateTask("in-progress", http.StatusAccepted, make(map[string]string), "dsad", 0, Time3)
+	server.store.ChangeTask(id, "in-progress", http.StatusAccepted, make(map[string]string), nil, 0, Time3)
+	//find requests within scheduledEndTime Time2 and Time3
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/task?minScheduledEndTime=2008-01-02T16:00:00Z&maxScheduledEndTime=2010-01-02T22:00:00Z", nil)
+	req.SetBasicAuth(username, password)
+	server.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	allTasks, _ = server.store.GetAllTasks()
+	for _, task := range allTasks {
+		if !(task.ScheduledEndTime.Before(Time2) || task.ScheduledEndTime.After(Time3)) {
+			t.Error("task query with parameters minScheduledEndTime=2008-01-02T16:00:00Z&maxScheduledEndTime=2010-01-02T22:00:00Z returned tasks outside of the bounds of the query")
+			return
+		}
+	}
+}
 
 func TestDeleteRoutes(t *testing.T) {
 	err := recreateDb()

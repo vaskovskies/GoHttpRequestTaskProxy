@@ -100,10 +100,10 @@ func processTaskParameters(c *gin.Context) (string, *int, *time.Time, *time.Time
 // @Produce json
 // @Param status query string false "Status"
 // @Param httpStatusCode query int false "HTTP Status Code"
-// @Param minScheduledStartTime query string false "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SS"
-// @Param maxScheduledStartTime query string false "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SS"
-// @Param minScheduledEndTime query string false "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SS"
-// @Param maxScheduledEndTime query string false "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SS"
+// @Param minScheduledStartTime query string false "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param maxScheduledStartTime query string false "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param minScheduledEndTime query string false "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param maxScheduledEndTime query string false "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ"
 // @Success 200 {array} taskstore.Task
 // @Failure 500
 // @Router /task [get]
@@ -142,10 +142,10 @@ func (ts *taskServer) getAllTasksHandler(c *gin.Context) {
 // @Produce json
 // @Param status query string false "Status"
 // @Param httpStatusCode query int false "HTTP Status Code"
-// @Param minScheduledStartTime query string false "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SS"
-// @Param maxScheduledStartTime query string false "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SS"
-// @Param minScheduledEndTime query string false "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SS"
-// @Param maxScheduledEndTime query string false "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SS"
+// @Param minScheduledStartTime query string false "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param maxScheduledStartTime query string false "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param minScheduledEndTime query string false "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param maxScheduledEndTime query string false "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ"
 // @Success 200
 // @Router /task [delete]
 // @security BasicAuth
