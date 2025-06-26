@@ -46,7 +46,7 @@ And out of the project root folder like this:
     docker compose -f deployments/docker-compose.test.yml up --build
 
 The test docker deployment consists of service:
-- go_testapp: the test server application
+- go_app: the server application
 - go_testdb: the postgres test database
 
 ## Running tests locally
