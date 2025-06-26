@@ -59,6 +59,11 @@ func TestCreateRoute(t *testing.T) {
 		return
 	}
 
+	defer func() {
+		close(server.tasks)
+		server.wg.Wait()
+	}()
+
 	w := httptest.NewRecorder()
 	task := RequestBody{
 		Method: "GET",
@@ -88,8 +93,6 @@ func TestCreateRoute(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
-	close(server.tasks)
-	server.wg.Wait()
 }
 
 func TestGetRoutes(t *testing.T) {
@@ -105,6 +108,14 @@ func TestGetRoutes(t *testing.T) {
 		t.Fail()
 		return
 	}
+	ischannelopen := true
+
+	defer func() {
+		if ischannelopen {
+			close(server.tasks)
+			server.wg.Wait()
+		}
+	}()
 
 	assertInProgressEntryIsCorrect := func(task taskstore.Task) {
 		assert.Equal(t, task.Status, taskstore.StatusInProgress)
@@ -174,6 +185,8 @@ func TestGetRoutes(t *testing.T) {
 	//Close channel and wait for the tasks to finish to observe finished task results
 	close(server.tasks)
 	server.wg.Wait()
+
+	ischannelopen = false
 
 	//test 1: get by id
 	w = httptest.NewRecorder()
@@ -279,6 +292,10 @@ func TestGetRequestParametrization(t *testing.T) {
 		t.Fail()
 		return
 	}
+	defer func() {
+		close(server.tasks)
+		server.wg.Wait()
+	}()
 
 	//test 1: test bad requests
 
@@ -352,9 +369,6 @@ func TestGetRequestParametrization(t *testing.T) {
 			return
 		}
 	}
-
-	close(server.tasks)
-	server.wg.Wait()
 }
 
 func TestDeleteRequestParametrization(t *testing.T) {
@@ -370,6 +384,10 @@ func TestDeleteRequestParametrization(t *testing.T) {
 		t.Fail()
 		return
 	}
+	defer func() {
+		close(server.tasks)
+		server.wg.Wait()
+	}()
 
 	//test 1: test bad requests
 
@@ -427,9 +445,6 @@ func TestDeleteRequestParametrization(t *testing.T) {
 	server.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, w.Body.String(), "null")
-
-	close(server.tasks)
-	server.wg.Wait()
 }
 
 var username = "admin"
@@ -448,6 +463,10 @@ func TestDeleteRoutes(t *testing.T) {
 		t.Fail()
 		return
 	}
+	defer func() {
+		close(server.tasks)
+		server.wg.Wait()
+	}()
 
 	//since the create and get tests have extensively tested the validity of the entries, this will not send requests to post /task
 	//and instead create everything on the store directly
@@ -547,7 +566,4 @@ func TestDeleteRoutes(t *testing.T) {
 	server.router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
-
-	close(server.tasks)
-	server.wg.Wait()
 }
