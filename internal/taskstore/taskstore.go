@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -161,19 +162,20 @@ func processParametersIntoStringMaps(status string, httpStatusCode *int, minSche
 		Eq["status"] = status
 	}
 	if httpStatusCode != nil {
-		Eq["httpStatusCode"] = httpStatusCode
+		Eq["http_status_code"] = *httpStatusCode
 	}
+	log.Println(squirrel.Eq(Eq))
 	if minScheduledStartTime != nil {
-		GtOrEq["scheduled_start_time"] = minScheduledStartTime
+		GtOrEq["scheduled_start_time"] = *minScheduledStartTime
 	}
 	if minScheduledEndTime != nil {
-		GtOrEq["scheduled_end_time"] = minScheduledEndTime
+		GtOrEq["scheduled_end_time"] = *minScheduledEndTime
 	}
 	if maxScheduledStartTime != nil {
-		LtOrEq["scheduled_start_time"] = maxScheduledStartTime
+		LtOrEq["scheduled_start_time"] = *maxScheduledStartTime
 	}
 	if maxScheduledEndTime != nil {
-		LtOrEq["scheduled_end_time"] = maxScheduledEndTime
+		LtOrEq["scheduled_end_time"] = *maxScheduledEndTime
 	}
 
 	return Eq, LtOrEq, GtOrEq
@@ -183,14 +185,16 @@ func processParametersIntoStringMaps(status string, httpStatusCode *int, minSche
 func (ts *TaskStore) DeleteTasksWithFilter(status string, httpStatusCode *int, minScheduledStartTime *time.Time, maxScheduledStartTime *time.Time, minScheduledEndTime *time.Time, maxScheduledEndTime *time.Time) error {
 
 	queryBuilder := squirrel.Delete("tasks")
-	if status != "" {
-		queryBuilder = queryBuilder.Where("status = ?", status)
-	}
-	if httpStatusCode != nil {
-		queryBuilder = queryBuilder.Where("http_status_code = ?", *httpStatusCode)
-	}
+	Eq, LtOrEq, GtOrEq := processParametersIntoStringMaps(status, httpStatusCode, minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime)
 	queryBuilder = queryBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder = queryBuilder.Where(squirrel.Eq(Eq))
+	queryBuilder = queryBuilder.Where(squirrel.LtOrEq(LtOrEq))
+	queryBuilder = queryBuilder.Where(squirrel.GtOrEq(GtOrEq))
 	query, args, err := queryBuilder.ToSql()
+	log.Println(Eq)
+
+	log.Println(query)
+
 	if err != nil {
 		return err
 	}
@@ -239,14 +243,13 @@ func (ts *TaskStore) GetTasksWithFilter(status string, httpStatusCode *int, minS
 
 	//build sql string
 	queryBuilder := squirrel.Select("id,status,http_status_code,request_headers,response_headers,request_body,response_body,length,scheduled_start_time,scheduled_end_time").From("tasks")
-	if status != "" {
-		queryBuilder = queryBuilder.Where("status = ?", status)
-	}
-	if httpStatusCode != nil {
-		queryBuilder = queryBuilder.Where("http_status_code = ?", *httpStatusCode)
-	}
+	Eq, LtOrEq, GtOrEq := processParametersIntoStringMaps(status, httpStatusCode, minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime)
 	queryBuilder = queryBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder = queryBuilder.Where(squirrel.Eq(Eq))
+	queryBuilder = queryBuilder.Where(squirrel.LtOrEq(LtOrEq))
+	queryBuilder = queryBuilder.Where(squirrel.GtOrEq(GtOrEq))
 	query, args, err := queryBuilder.ToSql()
+	log.Println(query)
 	if err != nil {
 		return nil, err
 	}
