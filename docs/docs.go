@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/task": {
             "get": {
-                "description": "Returns a JSON array of tasks. Can be supplied parameters status and httpStatusCode to select tasks with those parameters.",
+                "description": "Returns a JSON array of tasks. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to get tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS",
                 "consumes": [
                     "application/json"
                 ],
@@ -36,6 +36,30 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "HTTP Status Code",
                         "name": "httpStatusCode",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SS",
+                        "name": "minScheduledStartTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SS",
+                        "name": "maxScheduledStartTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SS",
+                        "name": "minScheduledEndTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SS",
+                        "name": "maxScheduledEndTime",
                         "in": "query"
                     }
                 ],
@@ -86,7 +110,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Deletes all tasks on the server. Requires authorization. Can be supplied parameters status and httpStatusCode to delete tasks with those parameters.",
+                "description": "Deletes all tasks on the server. Requires authorization. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to delete tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS",
                 "consumes": [
                     "application/json"
                 ],
@@ -105,6 +129,30 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "HTTP Status Code",
                         "name": "httpStatusCode",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SS",
+                        "name": "minScheduledStartTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SS",
+                        "name": "maxScheduledStartTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SS",
+                        "name": "minScheduledEndTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SS",
+                        "name": "maxScheduledEndTime",
                         "in": "query"
                     }
                 ],
