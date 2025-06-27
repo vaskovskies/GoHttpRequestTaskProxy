@@ -40,9 +40,11 @@ The docker compose deployment consists of:
 Running the tests inside the production container WILL result in test failures and data loss. </b>
 
 The test postgres docker container can be ran out of the deployments folder like this:
+
     docker compose up -d
 
 And out of the project root folder like this:
+
     docker compose -f deployments/docker-compose.test.yml up --build
 
 The test docker deployment consists of service:
