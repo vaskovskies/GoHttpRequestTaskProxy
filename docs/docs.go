@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/task": {
             "get": {
-                "description": "Returns a JSON array of tasks. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to get tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS",
+                "description": "Returns a JSON array of tasks. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to get tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)",
                 "consumes": [
                     "application/json"
                 ],
@@ -40,25 +40,25 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "description": "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)",
                         "name": "minScheduledStartTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "description": "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)",
                         "name": "maxScheduledStartTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "description": "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)",
                         "name": "minScheduledEndTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "description": "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)",
                         "name": "maxScheduledEndTime",
                         "in": "query"
                     }
@@ -94,7 +94,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.RequestBody"
+                            "$ref": "#/definitions/taskserver.RequestBody"
                         }
                     }
                 ],
@@ -110,7 +110,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Deletes all tasks on the server. Requires authorization. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to delete tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS",
+                "description": "Deletes all tasks on the server. Requires authorization. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to delete tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)",
                 "consumes": [
                     "application/json"
                 ],
@@ -133,25 +133,25 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "description": "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)",
                         "name": "minScheduledStartTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "description": "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)",
                         "name": "maxScheduledStartTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "description": "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)",
                         "name": "minScheduledEndTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ",
+                        "description": "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)",
                         "name": "maxScheduledEndTime",
                         "in": "query"
                     }
@@ -223,7 +223,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "main.RequestBody": {
+        "taskserver.RequestBody": {
             "description": "Request body for creating a task",
             "type": "object",
             "properties": {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"GoHttpRequestTaskProxy/internal/taskserver"
 	"GoHttpRequestTaskProxy/internal/taskstore"
 	"bytes"
 	"context"
@@ -51,19 +52,19 @@ func TestCreateRoute(t *testing.T) {
 		t.Fatalf("Couldn't clean database. Is the enviroment variable set correctly? Is the database test container on?")
 		return
 	}
-	server, err := setupServer()
+	server, err := taskserver.New()
 	if err != nil {
 		t.Fatalf("Couldn't set up test server. Is the enviroment variable set correctly? Is the database test container on?")
 		return
 	}
 
 	defer func() {
-		close(server.tasks)
-		server.wg.Wait()
+		close(server.Tasks)
+		server.Wg.Wait()
 	}()
 
 	w := httptest.NewRecorder()
-	task := RequestBody{
+	task := taskserver.RequestBody{
 		Method: "GET",
 		Url:    "https://jsonplaceholder.typicode.com/todos/1",
 		Headers: map[string]string{
@@ -78,7 +79,7 @@ func TestCreateRoute(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("POST", "/task", bytes.NewBuffer(taskJSON))
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, `{"Id":1}`, w.Body.String())
@@ -87,7 +88,7 @@ func TestCreateRoute(t *testing.T) {
 	w = httptest.NewRecorder()
 
 	req, _ = http.NewRequest("POST", "/task", nil)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
@@ -99,7 +100,7 @@ func TestGetRoutes(t *testing.T) {
 		t.Fatalf("Couldn't clean database. Is the enviroment variable set correctly? Is the database test container on?")
 		return
 	}
-	server, err := setupServer()
+	server, err := taskserver.New()
 	if err != nil {
 		t.Fatalf("Couldn't set up test server. Is the enviroment variable set correctly? Is the database test container on?")
 		return
@@ -108,8 +109,8 @@ func TestGetRoutes(t *testing.T) {
 
 	defer func() {
 		if ischannelopen {
-			close(server.tasks)
-			server.wg.Wait()
+			close(server.Tasks)
+			server.Wg.Wait()
 		}
 	}()
 
@@ -127,7 +128,7 @@ func TestGetRoutes(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
-	task := RequestBody{
+	task := taskserver.RequestBody{
 		Method: "GET",
 		Url:    "https://jsonplaceholder.typicode.com/todos/1",
 		Headers: map[string]string{
@@ -142,7 +143,7 @@ func TestGetRoutes(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("POST", "/task", bytes.NewBuffer(taskJSON))
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, w.Code, http.StatusOK)
 	//test that the in progress task is correct
 	var taskResponse taskstore.Task
@@ -151,7 +152,7 @@ func TestGetRoutes(t *testing.T) {
 
 	req, _ = http.NewRequest("GET", "/task/1", nil)
 
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
@@ -164,7 +165,7 @@ func TestGetRoutes(t *testing.T) {
 
 	//add incorrect task
 	w = httptest.NewRecorder()
-	task = RequestBody{
+	task = taskserver.RequestBody{
 		Method: "POST",
 		Url:    "/task",
 		Headers: map[string]string{
@@ -174,13 +175,13 @@ func TestGetRoutes(t *testing.T) {
 	}
 
 	req, _ = http.NewRequest("POST", "/task", bytes.NewBuffer([]byte(task.Body)))
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	t.Log(w.Body)
 	assert.Equal(t, w.Code, http.StatusOK)
 
 	//Close channel and wait for the tasks to finish to observe finished task results
-	close(server.tasks)
-	server.wg.Wait()
+	close(server.Tasks)
+	server.Wg.Wait()
 
 	ischannelopen = false
 
@@ -189,7 +190,7 @@ func TestGetRoutes(t *testing.T) {
 
 	req, _ = http.NewRequest("GET", "/task/1", nil)
 
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
@@ -227,7 +228,7 @@ func TestGetRoutes(t *testing.T) {
 
 	req, _ = http.NewRequest("GET", "/task", nil)
 
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
@@ -264,7 +265,7 @@ func TestGetRoutes(t *testing.T) {
 
 	req, _ = http.NewRequest("GET", "/task/404", nil)
 
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 
@@ -273,7 +274,7 @@ func TestGetRoutes(t *testing.T) {
 
 	req, _ = http.NewRequest("GET", "/task/NAN", nil)
 
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
@@ -284,14 +285,14 @@ func TestGetRequestParametrization(t *testing.T) {
 		t.Fatalf("Couldn't clean database. Is the enviroment variable set correctly? Is the database test container on?")
 		return
 	}
-	server, err := setupServer()
+	server, err := taskserver.New()
 	if err != nil {
 		t.Fatalf("Couldn't set up test server. Is the enviroment variable set correctly? Is the database test container on?")
 		return
 	}
 	defer func() {
-		close(server.tasks)
-		server.wg.Wait()
+		close(server.Tasks)
+		server.Wg.Wait()
 	}()
 
 	//test 1: test bad requests
@@ -299,34 +300,35 @@ func TestGetRequestParametrization(t *testing.T) {
 	//invalid status
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/task?status=NOTVALID", nil)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	//invalid httpStatusCode
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/task?httpStatusCode=NaN", nil)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	//test 2: test if the parametrization works correctly
 
 	//create fake test tasks
-	Time1, _ := time.Parse(time.RFC3339, "2006-01-02T12:00:00Z")
+	const layout_milli = "2006-01-02T15:04:05.000000Z07:00"
+	Time1, _ := time.Parse(layout_milli, "2006-01-02T12:00:00.000033Z")
 	Time2, _ := time.Parse(time.RFC3339, "2008-01-02T16:00:00Z")
 	Time3, _ := time.Parse(time.RFC3339, "2010-01-02T22:00:00Z")
-	Time4, _ := time.Parse(time.RFC3339, "2012-01-02T24:00:00Z")
-	id, _ := server.store.CreateTask("done", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time1)
-	server.store.ChangeTask(id, "done", http.StatusInternalServerError, make(map[string]string), nil, 0, Time1)
-	id, _ = server.store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, Time2)
-	server.store.ChangeTask(id, "done", http.StatusOK, make(map[string]string), nil, 0, Time2)
-	id, _ = server.store.CreateTask("in-progress", http.StatusAccepted, make(map[string]string), "dsad", 0, Time3)
-	server.store.ChangeTask(id, "in-progress", http.StatusAccepted, make(map[string]string), nil, 0, Time3)
-	id, _ = server.store.CreateTask("error", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time4)
-	server.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), nil, 0, Time4)
+	Time4, _ := time.Parse(time.RFC3339, "2012-01-02T23:00:00.000033Z")
+	id, _ := server.Store.CreateTask("done", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time1)
+	server.Store.ChangeTask(id, "done", http.StatusInternalServerError, make(map[string]string), nil, 0, Time1)
+	id, _ = server.Store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, Time2)
+	server.Store.ChangeTask(id, "done", http.StatusOK, make(map[string]string), nil, 0, Time2)
+	id, _ = server.Store.CreateTask("in-progress", http.StatusAccepted, make(map[string]string), "dsad", 0, Time3)
+	server.Store.ChangeTask(id, "in-progress", http.StatusAccepted, make(map[string]string), nil, 0, Time3)
+	id, _ = server.Store.CreateTask("error", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time4)
+	server.Store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), nil, 0, Time4)
 
 	//send request for all tasks with statusCode 500
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/task?httpStatusCode=500", nil)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	var allTasksResponse []taskstore.Task
 	err = json.Unmarshal(w.Body.Bytes(), &allTasksResponse)
@@ -344,7 +346,7 @@ func TestGetRequestParametrization(t *testing.T) {
 	//send request for all tasks with status = done
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/task?status=done", nil)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	err = json.Unmarshal(w.Body.Bytes(), &allTasksResponse)
 	if err != nil {
@@ -361,7 +363,7 @@ func TestGetRequestParametrization(t *testing.T) {
 	//send request for all tasks with status = done and httpStatusCode of 200
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/task?status=done&httpStatusCode=200", nil)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	err = json.Unmarshal(w.Body.Bytes(), &allTasksResponse)
 	if err != nil {
@@ -378,7 +380,7 @@ func TestGetRequestParametrization(t *testing.T) {
 	//find requests within scheduledStartTime Time2 and Time3
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/task?minScheduledStartTime=2008-01-02T16:00:00Z&maxScheduledStartTime=2010-01-02T22:00:00Z", nil)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	err = json.Unmarshal(w.Body.Bytes(), &allTasksResponse)
 	if err != nil {
@@ -395,7 +397,7 @@ func TestGetRequestParametrization(t *testing.T) {
 	//find requests within scheduledEndTime Time2 and Time3
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/task?minScheduledEndTime=2008-01-02T16:00:00Z&maxScheduledEndTime=2010-01-02T22:00:00Z", nil)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	err = json.Unmarshal(w.Body.Bytes(), &allTasksResponse)
 	if err != nil {
@@ -406,6 +408,25 @@ func TestGetRequestParametrization(t *testing.T) {
 		if task.ScheduledEndTime.Before(Time2) || task.ScheduledEndTime.After(Time3) {
 			t.Error("task query with parameters minScheduledEndTime=2008-01-02T16:00:00Z&maxScheduledEndTime=2010-01-02T22:00:00Z returned tasks outside of the bounds of the query")
 			return
+		}
+	}
+
+	//find request with Time1
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/task?minScheduledStartTime=2006-01-02T12:00:00.000033Z&maxScheduledStartTime=2006-01-02T12:00:00.000033Z", nil)
+	server.Router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	err = json.Unmarshal(w.Body.Bytes(), &allTasksResponse)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+		return
+	}
+	if len(allTasksResponse) == 0 {
+		t.Error("Couldn't find a task with Time1 (2006-01-02T12:00:00.000033Z) when queried for that one task")
+	}
+	for _, task := range allTasksResponse {
+		if task.ScheduledStartTime != Time1 {
+			t.Error("Found task with time of not Time1 (2006-01-02T12:00:00.000033Z) when queried for one task")
 		}
 	}
 }
@@ -420,15 +441,15 @@ func TestDeleteRequestParametrization(t *testing.T) {
 		t.Fail()
 		return
 	}
-	server, err := setupServer()
+	server, err := taskserver.New()
 	if err != nil {
 		t.Logf("Couldn't set up test server. Is the enviroment variable set correctly? Is the database test container on?")
 		t.Fail()
 		return
 	}
 	defer func() {
-		close(server.tasks)
-		server.wg.Wait()
+		close(server.Tasks)
+		server.Wg.Wait()
 	}()
 
 	//test 1: test bad requests
@@ -437,32 +458,32 @@ func TestDeleteRequestParametrization(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("DELETE", "/task?status=NOTVALID", nil)
 	req.SetBasicAuth(username, password)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	//invalid httpStatusCode
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("DELETE", "/task?httpStatusCode=NaN", nil)
 	req.SetBasicAuth(username, password)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	//test 2: test if the parametrization works correctly
 
 	//create fake test tasks
-	server.store.CreateTask("done", http.StatusInternalServerError, make(map[string]string), "dsad", 0, time.Now())
-	server.store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, time.Now())
-	server.store.CreateTask("in-progress", http.StatusAccepted, make(map[string]string), "dsad", 0, time.Now())
-	server.store.CreateTask("error", http.StatusInternalServerError, make(map[string]string), "dsad", 0, time.Now())
+	server.Store.CreateTask("done", http.StatusInternalServerError, make(map[string]string), "dsad", 0, time.Now())
+	server.Store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, time.Now())
+	server.Store.CreateTask("in-progress", http.StatusAccepted, make(map[string]string), "dsad", 0, time.Now())
+	server.Store.CreateTask("error", http.StatusInternalServerError, make(map[string]string), "dsad", 0, time.Now())
 
 	//send request for all tasks with statusCode 500 and status done
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("DELETE", "/task?httpStatusCode=500&status=done", nil)
 	req.SetBasicAuth(username, password)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/task?httpStatusCode=500&status=done", nil)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, w.Body.String(), "null")
 
@@ -470,10 +491,10 @@ func TestDeleteRequestParametrization(t *testing.T) {
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("DELETE", "/task?status=done", nil)
 	req.SetBasicAuth(username, password)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/task?status=done", nil)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, w.Body.String(), "null")
 
@@ -481,35 +502,36 @@ func TestDeleteRequestParametrization(t *testing.T) {
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("DELETE", "/task?httpStatusCode=202", nil)
 	req.SetBasicAuth(username, password)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/task?httpStatusCode=202", nil)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, w.Body.String(), "null")
 
 	//delete all tasks before start and end date tests
-	server.store.DeleteAllTasks()
+	server.Store.DeleteAllTasks()
 	//create fake test tasks
-	Time1, _ := time.Parse(time.RFC3339, "2006-01-02T12:00:00Z")
+	const layout_milli = "2006-01-02T15:04:05.000000Z07:00"
+	Time1, _ := time.Parse(layout_milli, "2006-01-02T12:00:00.000033Z")
 	Time2, _ := time.Parse(time.RFC3339, "2008-01-02T16:00:00Z")
 	Time3, _ := time.Parse(time.RFC3339, "2010-01-02T22:00:00Z")
-	Time4, _ := time.Parse(time.RFC3339, "2012-01-02T23:00:00Z")
-	id, _ := server.store.CreateTask("done", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time1)
-	server.store.ChangeTask(id, "done", http.StatusInternalServerError, make(map[string]string), nil, 0, Time1)
-	id, _ = server.store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, Time2)
-	server.store.ChangeTask(id, "done", http.StatusOK, make(map[string]string), nil, 0, Time2)
-	id, _ = server.store.CreateTask("in-progress", http.StatusAccepted, make(map[string]string), "dsad", 0, Time3)
-	server.store.ChangeTask(id, "in-progress", http.StatusAccepted, make(map[string]string), nil, 0, Time3)
-	id, _ = server.store.CreateTask("error", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time4)
-	server.store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), nil, 0, Time4)
+	Time4, _ := time.Parse(time.RFC3339, "2012-01-02T23:00:00.000033Z")
+	id, _ := server.Store.CreateTask("done", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time1)
+	server.Store.ChangeTask(id, "done", http.StatusInternalServerError, make(map[string]string), nil, 0, Time1)
+	id, _ = server.Store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, Time2)
+	server.Store.ChangeTask(id, "done", http.StatusOK, make(map[string]string), nil, 0, Time2)
+	id, _ = server.Store.CreateTask("in-progress", http.StatusAccepted, make(map[string]string), "dsad", 0, Time3)
+	server.Store.ChangeTask(id, "in-progress", http.StatusAccepted, make(map[string]string), nil, 0, Time3)
+	id, _ = server.Store.CreateTask("error", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time4)
+	server.Store.ChangeTask(id, "error", http.StatusInternalServerError, make(map[string]string), nil, 0, Time4)
 
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("DELETE", "/task?minScheduledStartTime=2008-01-02T16:00:00Z&maxScheduledStartTime=2010-01-02T22:00:00Z", nil)
 	req.SetBasicAuth(username, password)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
-	allTasks, _ := server.store.GetAllTasks()
+	allTasks, _ := server.Store.GetAllTasks()
 	for _, task := range allTasks {
 		if !(task.ScheduledStartTime.Before(Time2) || task.ScheduledStartTime.After(Time3)) {
 			t.Error("task query with parameters minScheduledStartTime=2008-01-02T16:00:00Z&maxScheduledStartTime=2010-01-02T22:00:00Z returned tasks outside of the bounds of the query")
@@ -518,17 +540,17 @@ func TestDeleteRequestParametrization(t *testing.T) {
 	}
 
 	//re-add tasks with Time2 and Time3
-	id, _ = server.store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, Time2)
-	server.store.ChangeTask(id, "done", http.StatusOK, make(map[string]string), nil, 0, Time2)
-	id, _ = server.store.CreateTask("in-progress", http.StatusAccepted, make(map[string]string), "dsad", 0, Time3)
-	server.store.ChangeTask(id, "in-progress", http.StatusAccepted, make(map[string]string), nil, 0, Time3)
+	id, _ = server.Store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, Time2)
+	server.Store.ChangeTask(id, "done", http.StatusOK, make(map[string]string), nil, 0, Time2)
+	id, _ = server.Store.CreateTask("in-progress", http.StatusAccepted, make(map[string]string), "dsad", 0, Time3)
+	server.Store.ChangeTask(id, "in-progress", http.StatusAccepted, make(map[string]string), nil, 0, Time3)
 	//find requests within scheduledEndTime Time2 and Time3
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("DELETE", "/task?minScheduledEndTime=2008-01-02T16:00:00Z&maxScheduledEndTime=2010-01-02T22:00:00Z", nil)
 	req.SetBasicAuth(username, password)
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
-	allTasks, _ = server.store.GetAllTasks()
+	allTasks, _ = server.Store.GetAllTasks()
 	for _, task := range allTasks {
 		if !(task.ScheduledEndTime.Before(Time2) || task.ScheduledEndTime.After(Time3)) {
 			t.Error("task query with parameters minScheduledEndTime=2008-01-02T16:00:00Z&maxScheduledEndTime=2010-01-02T22:00:00Z returned tasks outside of the bounds of the query")
@@ -543,24 +565,24 @@ func TestDeleteRoutes(t *testing.T) {
 		t.Fatalf("Couldn't clean database. Is the enviroment variable set correctly? Is the database test container on?")
 		return
 	}
-	server, err := setupServer()
+	server, err := taskserver.New()
 	if err != nil {
 		t.Fatalf("Couldn't set up test server. Is the enviroment variable set correctly? Is the database test container on?")
 		return
 	}
 	defer func() {
-		close(server.tasks)
-		server.wg.Wait()
+		close(server.Tasks)
+		server.Wg.Wait()
 	}()
 
 	//since the create and get tests have extensively tested the validity of the entries, this will not send requests to post /task
 	//and instead create everything on the store directly
 
 	//create fake test tasks
-	server.store.CreateTask("mockTask", http.StatusOK, make(map[string]string), "dsad", 0, time.Now())
-	server.store.CreateTask("mockTask", http.StatusOK, make(map[string]string), "dsad", 0, time.Now())
-	server.store.CreateTask("mockTask", http.StatusOK, make(map[string]string), "dsad", 0, time.Now())
-	//ttasks, _ := server.store.GetTasksWithFilter("", nil)
+	server.Store.CreateTask("mockTask", http.StatusOK, make(map[string]string), "dsad", 0, time.Now())
+	server.Store.CreateTask("mockTask", http.StatusOK, make(map[string]string), "dsad", 0, time.Now())
+	server.Store.CreateTask("mockTask", http.StatusOK, make(map[string]string), "dsad", 0, time.Now())
+	//ttasks, _ := server.Store.GetTasksWithFilter("", nil)
 	//t.Log(ttasks[0].Id)
 
 	//test 1: check if the credentials are present
@@ -568,7 +590,7 @@ func TestDeleteRoutes(t *testing.T) {
 
 	req, _ := http.NewRequest("DELETE", "/task/1", nil)
 
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 
@@ -576,7 +598,7 @@ func TestDeleteRoutes(t *testing.T) {
 
 	req, _ = http.NewRequest("DELETE", "/task", nil)
 
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 
@@ -587,14 +609,14 @@ func TestDeleteRoutes(t *testing.T) {
 	req, _ = http.NewRequest("DELETE", "/task/NAN", nil)
 	req.SetBasicAuth(username, password)
 
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	//test 3: test deletion by id
 
 	//check if there are 3 tasks
-	tasks, err := server.store.GetAllTasks()
+	tasks, err := server.Store.GetAllTasks()
 
 	if err != nil {
 		t.Fatalf("Failed to get tasks: %v", err)
@@ -608,11 +630,11 @@ func TestDeleteRoutes(t *testing.T) {
 	req, _ = http.NewRequest("DELETE", "/task/1", nil)
 	req.SetBasicAuth(username, password)
 
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	tasks, err = server.store.GetAllTasks()
+	tasks, err = server.Store.GetAllTasks()
 
 	if err != nil {
 		t.Fatalf("Failed to get tasks: %v", err)
@@ -628,11 +650,11 @@ func TestDeleteRoutes(t *testing.T) {
 	req, _ = http.NewRequest("DELETE", "/task", nil)
 	req.SetBasicAuth(username, password)
 
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	tasks, err = server.store.GetAllTasks()
+	tasks, err = server.Store.GetAllTasks()
 
 	if err != nil {
 		t.Fatalf("Failed to get tasks: %v", err)
@@ -648,7 +670,7 @@ func TestDeleteRoutes(t *testing.T) {
 	req, _ = http.NewRequest("DELETE", "/task/404", nil)
 	req.SetBasicAuth(username, password)
 
-	server.router.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
