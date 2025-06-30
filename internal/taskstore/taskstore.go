@@ -182,12 +182,9 @@ func processParametersIntoStringMaps(status string, httpStatusCode *int, minSche
 // DeleteTasksWithFilter deletes all tasks in the store with given status and httpStatusCode.
 func (ts *TaskStore) DeleteTasksWithFilter(status string, httpStatusCode *int, minScheduledStartTime *time.Time, maxScheduledStartTime *time.Time, minScheduledEndTime *time.Time, maxScheduledEndTime *time.Time) error {
 
-	queryBuilder := squirrel.Delete("tasks")
+	queryBuilder := squirrel.Delete("tasks").PlaceholderFormat(squirrel.Dollar)
 	Eq, LtOrEq, GtOrEq := processParametersIntoStringMaps(status, httpStatusCode, minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime)
-	queryBuilder = queryBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder = queryBuilder.Where(squirrel.Eq(Eq))
-	queryBuilder = queryBuilder.Where(squirrel.LtOrEq(LtOrEq))
-	queryBuilder = queryBuilder.Where(squirrel.GtOrEq(GtOrEq))
+	queryBuilder = queryBuilder.Where(squirrel.Eq(Eq)).Where(squirrel.LtOrEq(LtOrEq)).Where(squirrel.GtOrEq(GtOrEq))
 	query, args, err := queryBuilder.ToSql()
 
 	if err != nil {
@@ -237,12 +234,9 @@ func (ts *TaskStore) GetAllTasks() ([]Task, error) {
 func (ts *TaskStore) GetTasksWithFilter(status string, httpStatusCode *int, minScheduledStartTime *time.Time, maxScheduledStartTime *time.Time, minScheduledEndTime *time.Time, maxScheduledEndTime *time.Time) ([]Task, error) {
 
 	//build sql string
-	queryBuilder := squirrel.Select("id,status,http_status_code,request_headers,response_headers,request_body,response_body,length,scheduled_start_time,scheduled_end_time").From("tasks")
+	queryBuilder := squirrel.Select("id,status,http_status_code,request_headers,response_headers,request_body,response_body,length,scheduled_start_time,scheduled_end_time").From("tasks").PlaceholderFormat(squirrel.Dollar)
 	Eq, LtOrEq, GtOrEq := processParametersIntoStringMaps(status, httpStatusCode, minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime)
-	queryBuilder = queryBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder = queryBuilder.Where(squirrel.Eq(Eq))
-	queryBuilder = queryBuilder.Where(squirrel.LtOrEq(LtOrEq))
-	queryBuilder = queryBuilder.Where(squirrel.GtOrEq(GtOrEq))
+	queryBuilder = queryBuilder.Where(squirrel.Eq(Eq)).Where(squirrel.LtOrEq(LtOrEq)).Where(squirrel.GtOrEq(GtOrEq))
 	query, args, err := queryBuilder.ToSql()
 
 	if err != nil {
