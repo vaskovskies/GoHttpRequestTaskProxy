@@ -128,15 +128,15 @@ func processTaskParameters(c *gin.Context) (string, *int, *time.Time, *time.Time
 // Get all tasks
 // @Summary Get all tasks
 // @Schemes
-// @Description Returns a JSON array of tasks. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to get tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS
+// @Description Returns a JSON array of tasks. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to get tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)
 // @Accept json
 // @Produce json
 // @Param status query string false "Status"
 // @Param httpStatusCode query int false "HTTP Status Code"
-// @Param minScheduledStartTime query string false "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ"
-// @Param maxScheduledStartTime query string false "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ"
-// @Param minScheduledEndTime query string false "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ"
-// @Param maxScheduledEndTime query string false "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param minScheduledStartTime query string false "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)"
+// @Param maxScheduledStartTime query string false "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)"
+// @Param minScheduledEndTime query string false "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)"
+// @Param maxScheduledEndTime query string false "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)"
 // @Success 200 {array} taskstore.Task
 // @Failure 500
 // @Router /task [get]
@@ -169,15 +169,15 @@ func (ts *TaskServer) getAllTasksHandler(c *gin.Context) {
 // Delete all tasks
 // @Summary Delete all tasks
 // @Schemes
-// @Description Deletes all tasks on the server. Requires authorization. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to delete tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS
+// @Description Deletes all tasks on the server. Requires authorization. Can be supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and httpStatusCode to delete tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)
 // @Accept json
 // @Produce json
 // @Param status query string false "Status"
 // @Param httpStatusCode query int false "HTTP Status Code"
-// @Param minScheduledStartTime query string false "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ"
-// @Param maxScheduledStartTime query string false "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ"
-// @Param minScheduledEndTime query string false "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ"
-// @Param maxScheduledEndTime query string false "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ"
+// @Param minScheduledStartTime query string false "Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)"
+// @Param maxScheduledStartTime query string false "Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)"
+// @Param minScheduledEndTime query string false "Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)"
+// @Param maxScheduledEndTime query string false "Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)"
 // @Success 200
 // @Router /task [delete]
 // @security BasicAuth

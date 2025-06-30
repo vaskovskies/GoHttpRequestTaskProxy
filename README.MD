@@ -82,5 +82,5 @@ You can also use the scripts/win_runTests.ps1 out of the project root folder to 
 
 - In the tasks, the body is displayed incorrectly on get request, with the escape characters displayed as their escape sequence (\n, \). This is related to ginContext.JSON(). Relevant stackoverflow issue: https://stackoverflow.com/questions/73460507/json-response-in-gogin-without-escape-characters (actually this was probably an issue with the server i was using to test this with)
 - can't query by content length, headers (in url json format?)
-- can't query by times directly by using the equals symbol("="). The database stores times in 2025-06-23 19:14:23.052463 format (YYYY-MM-DD HH:MM:SS.mmmmmm) and golang's default formats only include nanosecond formats. I would probably need to write a format for this myself, preferably one that is inline with the database's format to implement searching for tasks with those times.  
+- can't query by times directly by using the equals symbol("=").
 

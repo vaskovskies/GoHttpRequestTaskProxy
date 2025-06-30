@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  main.RequestBody:
+  taskserver.RequestBody:
     description: Request body for creating a task
     properties:
       body:
@@ -73,7 +73,7 @@ paths:
       description: 'Deletes all tasks on the server. Requires authorization. Can be
         supplied parameters minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime,
         maxScheduledEndTime, status and httpStatusCode to delete tasks with those
-        parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS'
+        parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS.mmmmmmZ (milliseconds optional)'
       parameters:
       - description: Status
         in: query
@@ -83,19 +83,23 @@ paths:
         in: query
         name: httpStatusCode
         type: integer
-      - description: Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ
+      - description: Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ
+          (milliseconds optional)
         in: query
         name: minScheduledStartTime
         type: string
-      - description: Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ
+      - description: Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ
+          (milliseconds optional)
         in: query
         name: maxScheduledStartTime
         type: string
-      - description: Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ
+      - description: Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ
+          (milliseconds optional)
         in: query
         name: minScheduledEndTime
         type: string
-      - description: Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ
+      - description: Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ
+          (milliseconds optional)
         in: query
         name: maxScheduledEndTime
         type: string
@@ -112,7 +116,8 @@ paths:
       - application/json
       description: 'Returns a JSON array of tasks. Can be supplied parameters minScheduledStartTime,
         maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, status and
-        httpStatusCode to get tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS'
+        httpStatusCode to get tasks with those parameters. Date/Time format: YYYY-MM-DDTHH:MM:SS.mmmmmmZ
+        (milliseconds optional)'
       parameters:
       - description: Status
         in: query
@@ -122,19 +127,23 @@ paths:
         in: query
         name: httpStatusCode
         type: integer
-      - description: Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ
+      - description: Minimum scheduled start time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ
+          (milliseconds optional)
         in: query
         name: minScheduledStartTime
         type: string
-      - description: Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SSZ
+      - description: Maximum scheduled start time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ
+          (milliseconds optional)
         in: query
         name: maxScheduledStartTime
         type: string
-      - description: Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ
+      - description: Minimum scheduled end time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ
+          (milliseconds optional)
         in: query
         name: minScheduledEndTime
         type: string
-      - description: Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SSZ
+      - description: Maximum scheduled end time in format YYYY-MM-DDTHH:MM:SS.mmmmmmZ
+          (milliseconds optional)
         in: query
         name: maxScheduledEndTime
         type: string
@@ -162,7 +171,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/main.RequestBody'
+          $ref: '#/definitions/taskserver.RequestBody'
       produces:
       - application/json
       responses:
