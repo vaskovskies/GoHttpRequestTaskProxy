@@ -34,7 +34,6 @@ const (
 
 type TaskStore struct {
 	dbPool *pgxpool.Pool
-	//sync.Mutex
 }
 
 func (ts *TaskStore) CloseDatabasePool() {
@@ -118,7 +117,6 @@ func (ts *TaskStore) GetTask(id int64) (task Task, err error) {
 func (ts *TaskStore) DeleteTask(id int64) error {
 
 	var exists bool
-	//check if task exists
 	err := ts.dbPool.QueryRow(context.Background(), "SELECT EXISTS (SELECT 1 FROM tasks WHERE id = $1)", id).Scan(&exists)
 	if err != nil {
 		return err
