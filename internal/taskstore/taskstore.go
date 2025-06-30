@@ -55,8 +55,7 @@ func New() (*TaskStore, error) {
 	return ts, nil
 }
 
-// Initiliaze database if the database is run locally or if docker initilization script failed
-
+// Initiliaze database if the database is ran locally or if docker initilization script failed
 func (ts *TaskStore) initDb() error {
 	_, err := ts.dbPool.Exec(context.Background(), `
 	CREATE TABLE IF NOT EXISTS tasks (
@@ -76,7 +75,6 @@ func (ts *TaskStore) initDb() error {
 }
 
 // CreateTask creates a new task in the store.
-
 func (ts *TaskStore) CreateTask(status string, httpStatusCode int, requestHeaders map[string]string, requestBody string, length int64, scheduledStartTime time.Time) (id int64, err error) {
 
 	err = ts.dbPool.QueryRow(context.Background(),
@@ -233,7 +231,6 @@ func (ts *TaskStore) GetAllTasks() ([]Task, error) {
 // GetTasksWithFilter returns tasks with the following status and/or httpStatusCode
 func (ts *TaskStore) GetTasksWithFilter(status string, httpStatusCode *int, minScheduledStartTime *time.Time, maxScheduledStartTime *time.Time, minScheduledEndTime *time.Time, maxScheduledEndTime *time.Time) ([]Task, error) {
 
-	//build sql string
 	queryBuilder := squirrel.Select("id,status,http_status_code,request_headers,response_headers,request_body,response_body,length,scheduled_start_time,scheduled_end_time").From("tasks").PlaceholderFormat(squirrel.Dollar)
 	Eq, LtOrEq, GtOrEq := processParametersIntoStringMaps(status, httpStatusCode, minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime)
 	queryBuilder = queryBuilder.Where(squirrel.Eq(Eq)).Where(squirrel.LtOrEq(LtOrEq)).Where(squirrel.GtOrEq(GtOrEq))

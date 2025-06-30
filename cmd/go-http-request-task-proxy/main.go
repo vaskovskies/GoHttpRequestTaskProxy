@@ -25,7 +25,6 @@ func main() {
 	}
 
 	go func() {
-		// service connections
 		if err := server.Srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
@@ -40,7 +39,6 @@ func main() {
 	<-quit
 	log.Println("Shutdown Server ...")
 
-	// catching ctx.Done(). timeout of 5 seconds.
 	if err := server.Srv.Shutdown(ctx); err != nil {
 		log.Println("Server Shutdown:", err)
 	}
@@ -51,7 +49,6 @@ func main() {
 
 	close(server.Tasks)
 
-	// Wait for all workers to finish
 	server.Wg.Wait()
 	log.Println("All workers have exited.")
 

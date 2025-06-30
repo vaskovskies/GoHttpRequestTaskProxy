@@ -100,14 +100,17 @@ func processTaskParameters(c *gin.Context) (string, *int, *time.Time, *time.Time
 	if err != nil {
 		return status, httpStatusCode, nil, nil, nil, nil, err
 	}
+
 	max_scheduled_start_time, err := processTimeParameter(c.Query("maxScheduledStartTime"))
 	if err != nil {
 		return status, httpStatusCode, min_scheduled_start_time, nil, nil, nil, err
 	}
+
 	min_scheduled_end_time, err := processTimeParameter(c.Query("minScheduledEndTime"))
 	if err != nil {
 		return status, httpStatusCode, min_scheduled_start_time, max_scheduled_start_time, nil, nil, err
 	}
+
 	max_scheduled_end_time, err := processTimeParameter(c.Query("maxScheduledEndTime"))
 	if err != nil {
 		return status, httpStatusCode, min_scheduled_start_time, max_scheduled_start_time, min_scheduled_end_time, nil, err
@@ -132,7 +135,6 @@ func processTaskParameters(c *gin.Context) (string, *int, *time.Time, *time.Time
 // @Failure 500
 // @Router /task [get]
 func (ts *TaskServer) getAllTasksHandler(c *gin.Context) {
-	//parameter checking
 	status, httpStatusCode, minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, err := processTaskParameters(c)
 
 	if err != nil {
@@ -174,9 +176,7 @@ func (ts *TaskServer) getAllTasksHandler(c *gin.Context) {
 // @Router /task [delete]
 // @security BasicAuth
 func (ts *TaskServer) deleteAllTasksHandler(c *gin.Context) {
-
 	status, httpStatusCode, minScheduledStartTime, maxScheduledStartTime, minScheduledEndTime, maxScheduledEndTime, err := processTaskParameters(c)
-
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
