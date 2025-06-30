@@ -86,8 +86,8 @@ func processTimeParameter(s string) (*time.Time, error) {
 func processTaskParameters(c *gin.Context) (string, *int, *time.Time, *time.Time, *time.Time, *time.Time, error) {
 
 	status := c.Query("status")
-	if status != taskstore.StatusDone && status != taskstore.StatusInProgress && status != taskstore.StatusError && status != "" {
-		return "", nil, nil, nil, nil, nil, fmt.Errorf("error: status can only be done, in-progress, error or empty string")
+	if status != taskstore.StatusDone && status != taskstore.StatusNew && status != taskstore.StatusInProgress && status != taskstore.StatusError && status != "" {
+		return "", nil, nil, nil, nil, nil, fmt.Errorf("error: status can only be new, in-progress, done, error or empty string")
 	}
 
 	var httpStatusCode *int
@@ -218,12 +218,16 @@ type RequestTask struct {
 func (ts *TaskServer) taskWorker(tasks <-chan RequestTask) {
 	defer ts.Wg.Done()
 	for task := range tasks {
+		err := ts.Store.ChangeTask(task.Id, taskstore.StatusInProgress, http.StatusInternalServerError, make(map[string]string), nil, 0, time.Now())
+		if err != nil {
+			log.Println("couldn't change task: ", task.Id)
+		}
 		var req *http.Request
 		var reqBodyBuf io.Reader = http.NoBody
 		if task.RequestBody.Body != "" {
 			reqBodyBuf = bytes.NewBuffer([]byte(task.RequestBody.Body))
 		}
-		req, err := http.NewRequest(task.RequestBody.Method, task.RequestBody.Url, reqBodyBuf)
+		req, err = http.NewRequest(task.RequestBody.Method, task.RequestBody.Url, reqBodyBuf)
 		req.Header.Set("Content-Type", "application/json")
 
 		if err != nil {
@@ -305,7 +309,7 @@ func (ts *TaskServer) createTaskHandler(c *gin.Context) {
 	if rt.Headers == nil {
 		rt.Headers = make(map[string]string)
 	}
-	id, err := ts.Store.CreateTask(taskstore.StatusInProgress, 202, rt.Headers, string(requestBodyBytes), 0, scheduledStartTime)
+	id, err := ts.Store.CreateTask(taskstore.StatusNew, 202, rt.Headers, string(requestBodyBytes), 0, scheduledStartTime)
 
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
