@@ -30,6 +30,7 @@ const (
 	StatusDone       = "done"
 	StatusInProgress = "in-progress"
 	StatusError      = "error"
+	StatusNew        = "new"
 )
 
 type TaskStore struct {

@@ -115,7 +115,10 @@ func TestGetRoutes(t *testing.T) {
 	}()
 
 	assertInProgressEntryIsCorrect := func(task taskstore.Task) {
-		assert.Equal(t, task.Status, taskstore.StatusInProgress)
+		if task.Status != taskstore.StatusNew && task.Status != taskstore.StatusInProgress {
+			t.Error("New task status isn't new or in-progress")
+			return
+		}
 		assert.Equal(t, task.RequestHeaders, map[string]string{"Content-Type": "application/json"})
 		assert.Equal(t, task.ScheduledEndTime, nil)
 		assert.Equal(t, task.ResponseBody, nil)
