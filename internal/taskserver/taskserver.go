@@ -64,13 +64,19 @@ func New() (*TaskServer, error) {
 
 func processTimeParameter(s string) (*time.Time, error) {
 	const layout = time.RFC3339
+	const layout_milli = "2006-01-02T15:04:05.000000Z07:00"
 	var returnTime *time.Time
 	if s == "" {
 		returnTime = nil
 	} else {
-		parsedTime, err := time.Parse(layout, s)
+		var parsedTime time.Time
+		parsedTime, err := time.Parse(layout_milli, s)
 		if err != nil {
-			return nil, err
+			parsedTime, err = time.Parse(layout, s)
+			returnTime = &parsedTime
+			if err != nil {
+				return nil, err
+			}
 		}
 		returnTime = &parsedTime
 	}

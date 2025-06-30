@@ -311,10 +311,11 @@ func TestGetRequestParametrization(t *testing.T) {
 	//test 2: test if the parametrization works correctly
 
 	//create fake test tasks
-	Time1, _ := time.Parse(time.RFC3339, "2006-01-02T12:00:00Z")
+	const layout_milli = "2006-01-02T15:04:05.000000Z07:00"
+	Time1, _ := time.Parse(layout_milli, "2006-01-02T12:00:00.000033Z")
 	Time2, _ := time.Parse(time.RFC3339, "2008-01-02T16:00:00Z")
 	Time3, _ := time.Parse(time.RFC3339, "2010-01-02T22:00:00Z")
-	Time4, _ := time.Parse(time.RFC3339, "2012-01-02T24:00:00Z")
+	Time4, _ := time.Parse(time.RFC3339, "2012-01-02T23:00:00.000033Z")
 	id, _ := server.Store.CreateTask("done", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time1)
 	server.Store.ChangeTask(id, "done", http.StatusInternalServerError, make(map[string]string), nil, 0, Time1)
 	id, _ = server.Store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, Time2)
@@ -409,6 +410,25 @@ func TestGetRequestParametrization(t *testing.T) {
 			return
 		}
 	}
+
+	//find request with Time1
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/task?minScheduledStartTime=2006-01-02T12:00:00.000033Z&maxScheduledStartTime=2006-01-02T12:00:00.000033Z", nil)
+	server.Router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	err = json.Unmarshal(w.Body.Bytes(), &allTasksResponse)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+		return
+	}
+	if len(allTasksResponse) == 0 {
+		t.Error("Couldn't find a task with Time1 (2006-01-02T12:00:00.000033Z) when queried for that one task")
+	}
+	for _, task := range allTasksResponse {
+		if task.ScheduledStartTime != Time1 {
+			t.Error("Found task with time of not Time1 (2006-01-02T12:00:00.000033Z) when queried for one task")
+		}
+	}
 }
 
 var username = "admin"
@@ -492,10 +512,11 @@ func TestDeleteRequestParametrization(t *testing.T) {
 	//delete all tasks before start and end date tests
 	server.Store.DeleteAllTasks()
 	//create fake test tasks
-	Time1, _ := time.Parse(time.RFC3339, "2006-01-02T12:00:00Z")
+	const layout_milli = "2006-01-02T15:04:05.000000Z07:00"
+	Time1, _ := time.Parse(layout_milli, "2006-01-02T12:00:00.000033Z")
 	Time2, _ := time.Parse(time.RFC3339, "2008-01-02T16:00:00Z")
 	Time3, _ := time.Parse(time.RFC3339, "2010-01-02T22:00:00Z")
-	Time4, _ := time.Parse(time.RFC3339, "2012-01-02T23:00:00Z")
+	Time4, _ := time.Parse(time.RFC3339, "2012-01-02T23:00:00.000033Z")
 	id, _ := server.Store.CreateTask("done", http.StatusInternalServerError, make(map[string]string), "dsad", 0, Time1)
 	server.Store.ChangeTask(id, "done", http.StatusInternalServerError, make(map[string]string), nil, 0, Time1)
 	id, _ = server.Store.CreateTask("done", http.StatusOK, make(map[string]string), "dsad", 0, Time2)
